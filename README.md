@@ -7,7 +7,10 @@ hecho para Dante (8 años). Es una sola página web, sin instalar nada.
 
 ## Cómo funciona
 
-Al entrar, cada jugador pone su **nombre** y su progreso se guarda en el dispositivo (sesión a sesión).
+Al entrar, cada jugador pone su **nombre** y su progreso se sincroniza en la nube (Firebase):
+puede entrar con su nombre desde **cualquier dispositivo** (tablet, móvil, ordenador) y recupera
+sus niveles desbloqueados por cada tabla. También funciona sin internet (guarda en local y
+sincroniza al reconectar).
 
 ### 📚 Aprender — La cantina
 Una taberna estilo Star Wars con un camarero alienígena. Dante elige un plato/bebida de la saga
@@ -33,6 +36,7 @@ La primera pantalla muestra en qué **nivel** está Dante en cada número y sus 
 
 ## Jugar sin internet
 Basta con abrir `index.html` en cualquier navegador (doble clic). Funciona en ordenador, tablet y móvil.
+La sincronización en la nube requiere conexión; sin ella el progreso se guarda en el propio dispositivo.
 
 ## Publicado con GitHub Pages
 El repositorio es público y el juego se sirve desde la rama `main`. Cualquier cambio en `index.html`
