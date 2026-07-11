@@ -371,6 +371,35 @@
 
 </div>
 
+<!-- ☁️ Firebase: sincroniza el historial de Dante entre dispositivos por su nombre -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyDLc34x_qbYk-WkbPbQtP-S1ONNnU6ZEAU",
+    authDomain: "dante-mates.firebaseapp.com",
+    databaseURL: "https://dante-mates-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "dante-mates",
+    storageBucket: "dante-mates.firebasestorage.app",
+    messagingSenderId: "696890882370",
+    appId: "1:696890882370:web:beba6a7448e5d0aea9b0db"
+  };
+  const keyOf = n => 'profiles/' + String(n||'').toLowerCase().trim().replace(/[.#$\[\]\/\s]+/g,'_');
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    window.cloudGet = async (name) => {
+      try { const s = await get(ref(db, keyOf(name))); return s.exists() ? s.val() : null; }
+      catch(e){ console.warn('cloudGet', e); return undefined; }   // undefined = error de red
+    };
+    window.cloudSet = async (name, data) => {
+      try { await set(ref(db, keyOf(name)), data); return true; }
+      catch(e){ console.warn('cloudSet', e); return false; }
+    };
+    window.cloudReady = true;
+  } catch(e){ console.warn('Firebase init falló', e); window.cloudReady = false; }
+</script>
+
 <script>
 /* ===== LA GALAXIA DE LAS MATES · invasores + tablas ===== */
 const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
@@ -495,7 +524,7 @@ function recordResult(table,level,ok,bad,stars,passed){const p=loadProg();
   const t=p.tables[table]||(p.tables[table]={plays:0,bestLevel:0,bestStars:0,levels:{}});t.plays++;
   const L=t.levels[level]||(t.levels[level]={bestOk:0,bestStars:0,passed:false,plays:0});
   L.plays++;L.bestOk=Math.max(L.bestOk,ok);L.bestStars=Math.max(L.bestStars,stars);if(passed)L.passed=true;
-  if(passed)t.bestLevel=Math.max(t.bestLevel,level);t.bestStars=Math.max(t.bestStars,stars);t.lastOk=ok;saveProg(p);}
+  if(passed)t.bestLevel=Math.max(t.bestLevel,level);t.bestStars=Math.max(t.bestStars,stars);t.lastOk=ok;saveProg(p);cloudPush();}
 const tableStars=table=>{const t=loadProg().tables[table];return t?t.bestStars:0;};
 const tableBest =table=>{const t=loadProg().tables[table];return t?(t.bestLevel||0):0;};      // nivel más alto SUPERADO
 const unlockedLevel=table=>Math.min(tableBest(table)+1,5);                                     // hasta dónde puede jugar
@@ -509,6 +538,34 @@ function enterProfile(name){
     s.profiles[name]=seed;
   }
   s.current=name;saveStore(s);return true;
+}
+
+/* ☁️ Sincronización con la nube (Firebase) */
+function mergeProfiles(a,b){
+  a=a||{tables:{}}; b=b||{tables:{}};
+  const out={tables:{}}, ta=a.tables||{}, tb=b.tables||{};
+  new Set([...Object.keys(ta),...Object.keys(tb)]).forEach(k=>{
+    const A=ta[k]||{}, B=tb[k]||{};
+    const T={plays:Math.max(A.plays||0,B.plays||0),bestLevel:Math.max(A.bestLevel||0,B.bestLevel||0),
+             bestStars:Math.max(A.bestStars||0,B.bestStars||0),levels:{}};
+    const la=A.levels||{}, lb=B.levels||{};
+    new Set([...Object.keys(la),...Object.keys(lb)]).forEach(l=>{
+      const X=la[l]||{}, Y=lb[l]||{};
+      T.levels[l]={bestOk:Math.max(X.bestOk||0,Y.bestOk||0),bestStars:Math.max(X.bestStars||0,Y.bestStars||0),
+                   passed:!!(X.passed||Y.passed),plays:Math.max(X.plays||0,Y.plays||0)};
+    });
+    out.tables[k]=T;
+  });
+  return out;
+}
+function cloudPush(){ const name=loadStore().current; if(name&&window.cloudSet) window.cloudSet(name,loadProg()); }
+async function cloudSync(name){
+  if(!window.cloudGet) return;
+  const remote=await window.cloudGet(name);
+  if(remote===undefined) return;                    // error de red → seguimos con lo local
+  const merged=mergeProfiles(loadProg(),remote||{tables:{}});
+  saveProg(merged);
+  if(window.cloudSet) window.cloudSet(name,merged);
 }
 
 /* Navegación */
@@ -531,7 +588,15 @@ $('#goProg').onclick =()=>{ac();showProgress();};
 
 /* Perfil / nombre */
 function goMenu(){$('#menuGreet').textContent='JEDI: '+((currentName()||'').toUpperCase());buildTables();show('#scMenu');}
-function doEnter(){if(enterProfile($('#nameInput').value)){sndTap();goMenu();}else{$('#nameInput').focus();}}
+async function doEnter(){
+  if(!enterProfile($('#nameInput').value)){$('#nameInput').focus();return;}
+  sndTap();
+  const eb=$('#enterBtn'),old=eb.textContent;
+  eb.textContent='☁ SINCRONIZANDO…';eb.style.pointerEvents='none';
+  try{await cloudSync(currentName());}catch(e){}
+  eb.textContent=old;eb.style.pointerEvents='';
+  goMenu();
+}
 function initName(){const s=loadStore();$('#nameInput').value=s.current||'';
   const names=Object.keys(s.profiles);
   $('#profileList').innerHTML=names.length
@@ -776,7 +841,7 @@ function showProgress(){const p=loadProg();let totalStars=0,tablesDone=0,medal='
       <button class="btn ghost" id="resetYes" style="color:var(--red);border-color:var(--red)">SÍ</button>
       <button class="btn ghost" id="resetNo">NO</button></span>`;
   $('#resetBtn').onclick=()=>{$('#resetBtn').style.display='none';$('#resetConfirm').style.display='inline';};
-  $('#resetYes')&&($('#resetYes').onclick=()=>{saveProg({tables:{}});buildTables();showProgress();});
+  $('#resetYes')&&($('#resetYes').onclick=()=>{saveProg({tables:{}});cloudPush();buildTables();showProgress();});
   $('#resetNo')&&($('#resetNo').onclick=()=>showProgress());
   show('#scProg');}
 $('#progBack').onclick=()=>show('#scMenu');
