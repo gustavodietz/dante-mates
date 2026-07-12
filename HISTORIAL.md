@@ -1,7 +1,7 @@
 # 📓 Historial del proyecto — La Galaxia de las Mates (juego para Dante)
 
 Documento de contexto para retomar el proyecto en futuras sesiones.
-Última actualización: **2026-07-11** (con sincronización Firebase entre dispositivos ya funcionando).
+Última actualización: **2026-07-12** (nuevo modo "Caza estelar" añadido; Firebase ya funcionaba).
 
 ---
 
@@ -75,6 +75,40 @@ ni build), pensado para abrirse en cualquier navegador (ordenador, tablet, móvi
    monedas **numeradas + total por plato**.
 7. Publicado en **GitHub Pages** (repo + Pages activo, HTTP 200 verificado).
 8. **Sincronización en la nube con Firebase** (historial por nombre entre dispositivos). ✅
+9. **Tercer modo de juego: "Caza estelar"** (cabina + mirilla). ✅
+
+---
+
+## 🎯 Caza estelar — tercer modo (HECHO)
+Nuevo modo **seleccionable desde el menú** (tarjeta 🎯 `#goHunter`), independiente de la tabla elegida.
+Todo dentro del mismo `index.html`, reutilizando sonido, `show()`, progreso/nube, `$`/`rnd`/`shuffle`, `TOTAL_Q`.
+
+- **Preguntas:** mezcla **todas las tablas 1–12**; alterna *resultado* (`4 × 7 = ?`) y *factor desconocido*
+  (`6 × ? = 24`, `? × 8 = 56`), con respuesta única. La proporción de incógnitas sube por nivel.
+- **Estructura:** **5 niveles**, **10 vidas**, **20 preguntas** máx. Objetivos: **5 / 7 / 9 / 12 / 15** naves.
+  Dificultad creciente: más naves simultáneas, más pequeñas, más rápidas y trayectorias menos predecibles.
+- **Dos fases por turno:** (1) **resolver** con teclado en pantalla; si falla → error + sonido, −1 vida,
+  muestra la solución y pasa de pregunta (sin disparo). Si acierta → (2) **apuntar y disparar** una sola vez.
+- **Mirilla:** círculo exterior + retícula interior, movimiento suave, cambia a rojo sobre una nave.
+  Controles: **flechas/WASD** + **espacio/Enter** para disparar, y **D-pad táctil** (▲◀🔥▶▼). Bloqueado el
+  doble disparo y la repetición de tecla; se evita el scroll de la página. Colisión por **centro/radio**
+  (no rectángulos permisivos).
+- **Disparo:** láser desde el cañón; impacto → explosión + sonido + naves destruidas + respawn; fallo →
+  el láser sigue al fondo y cuenta como fallado. Ambas cosas pasan de pregunta.
+- **Cabina original** (sin recursos de Star Wars/Mandalorian): metal envejecido, paneles, luces de
+  navegación, ventana frontal, espacio y naves al fondo, y un **acompañante alien verde propio** con
+  reacciones (alegría, celebración, susto, decepción, neutro, sueño si tarda).
+- **Cuadro de mandos** integra: operación, respuesta, nivel, vidas, nº de pregunta, aciertos, errores,
+  naves destruidas, barra de progreso y estado (respondiendo/apuntando/acierto/fallo/victoria/derrota).
+- **Resumen** (`scHResult`): nivel, preguntas, aciertos, errores, % acierto, naves, disparos fallados,
+  vidas y **tiempo**. Botones **Repetir / Siguiente / Menú** (Siguiente oculto al ganar el nivel 5).
+- **Progreso propio** bajo `perfil.hunter.levels` (no toca `tables`), sincronizado en la nube
+  (`mergeProfiles` extendido). Desbloqueo de niveles progresivo, igual que el modo clásico.
+- **Limpieza:** `hunterCleanup()` cancela `requestAnimationFrame`, timers y listeners al salir/reiniciar
+  (enganchado en `show()`).
+- **Pantallas nuevas:** `scHLevel` (selección), `scHunter` (juego), `scHResult` (resumen).
+- **Pruebas:** arnés headless con jsdom (fuera del repo) — 50 asserts del modo + 14 de regresión de los
+  modos clásicos, todos en verde; `node --check` OK; sin errores de consola.
 
 ---
 
