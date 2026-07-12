@@ -376,10 +376,43 @@
   #hResStats{text-align:center;font-size:clamp(13px,3.4vw,17px);margin:6px 0 4px;line-height:1.7;}
   #hResStars{text-align:center;font-size:34px;margin:8px 0;}
 
+  /* Móvil: la cabina llena la altura y la VENTANA se encoge, así el teclado nunca se corta */
   @media (max-width:520px){
-    #hWindow{height:38vh;min-height:200px;}
-    .hdpad{grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,46px);}
-    .hpill{font-size:8px;padding:4px 7px;}
+    #app{padding:6px;}
+    #scHunter.active{display:flex;height:100%;}
+    #scHunter .panel{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;width:100%;}
+    #scHunter .cockpit{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+    #hWindow{flex:1 1 auto;height:auto;min-height:120px;}
+    .dashboard{flex:0 0 auto;}
+    .hdpad{grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,44px);}
+    .dashboard{padding:8px;}
+    .hhud{gap:4px;margin-bottom:5px;padding-right:46px;}
+    .hpill{font-size:8px;padding:3px 6px;}
+    .hhearts{margin-bottom:4px;padding-right:46px;}
+    .hhearts .heart{font-size:13px;}
+    .hprog{margin-bottom:5px;height:8px;}
+    .hstate{margin:1px 0 5px;font-size:9px;min-height:12px;}
+    .hquestion{font-size:clamp(18px,6.4vw,28px);margin:1px 0 7px;padding-right:46px;}
+    #hInput,.haim{position:relative;z-index:2;}
+    #hInput{max-width:320px;}
+    #hTyped{min-height:42px;font-size:clamp(20px,7vw,34px);margin-bottom:6px;}
+    #hKeys{gap:6px;}
+    #hKeys .key{padding:9px;font-size:clamp(14px,4.6vw,20px);}
+    #hPet{width:44px;z-index:1;bottom:2px;right:2px;}
+    #hPetBubble{bottom:56px;font-size:9px;max-width:165px;padding:7px 9px;}
+  }
+  /* Pantallas bajas (móvil apaisado): mismo layout flexible + más compacto */
+  @media (max-height:560px){
+    #app{padding:6px;}
+    #scHunter.active{display:flex;height:100%;}
+    #scHunter .panel{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;width:100%;}
+    #scHunter .cockpit{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+    #hWindow{flex:1 1 auto;height:auto;min-height:110px;}
+    .dashboard{flex:0 0 auto;padding:7px;}
+    #hKeys{gap:5px;} #hKeys .key{padding:6px;font-size:16px;}
+    #hTyped{min-height:36px;margin-bottom:5px;}
+    .hquestion{font-size:22px;margin:1px 0 5px;}
+    .hhearts .heart{font-size:12px;}
   }
 </style>
 </head>
