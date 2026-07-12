@@ -95,9 +95,10 @@ Todo dentro del mismo `index.html`, reutilizando sonido, `show()`, progreso/nube
   (no rectángulos permisivos).
 - **Disparo:** láser desde el cañón; impacto → explosión + sonido + naves destruidas + respawn; fallo →
   el láser sigue al fondo y cuenta como fallado. Ambas cosas pasan de pregunta.
-- **Cabina original** (sin recursos de Star Wars/Mandalorian): metal envejecido, paneles, luces de
-  navegación, ventana frontal, espacio y naves al fondo, y un **acompañante alien verde propio** con
-  reacciones (alegría, celebración, susto, decepción, neutro, sueño si tarda).
+- **Cabina** de estética espacial: metal envejecido, paneles, luces de navegación, ventana frontal,
+  espacio y naves al fondo, y un **acompañante estilo Grogu** (SVG dibujado a mano, fan art para uso
+  personal/no comercial de Dante y Darío) con reacciones (alegría, celebración, susto, decepción,
+  neutro, sueño si tarda). Dice la solución al fallar en un bocadillo (como Yoda en el modo clásico).
 - **Cuadro de mandos** integra: operación, respuesta, nivel, vidas, nº de pregunta, aciertos, errores,
   naves destruidas, barra de progreso y estado (respondiendo/apuntando/acierto/fallo/victoria/derrota).
 - **Resumen** (`scHResult`): nivel, preguntas, aciertos, errores, % acierto, naves, disparos fallados,
