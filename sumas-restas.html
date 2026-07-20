@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>La Isla de los Números — Sumas y Restas (T-Rex)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --amber:#ffb400; --amber2:#ff8a00; --green:#7bd63f; --leaf:#3fae2a; --leaf-d:#1f6b17;
+    --red:#ff3b30; --bone:#efe6d0; --sky:#7fd0ff;
+    --panel:rgba(9,20,11,0.84); --panel-b:#3fae2a;
+    --arcade:"Press Start 2P","Courier New",monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;}
+  body{font-family:'Trebuchet MS',system-ui,sans-serif;background:#05100a;color:#fff;overflow:hidden;
+    user-select:none;-webkit-user-select:none;}
+  canvas#spores{position:fixed;inset:0;z-index:0;display:block;}
+  #crt{position:fixed;inset:0;z-index:9;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,0,0,.14) 3px,rgba(0,0,0,0) 4px),
+      radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%);
+    mix-blend-mode:multiply;opacity:.65;}
+
+  #app{position:relative;z-index:2;height:100%;width:100%;display:flex;align-items:center;justify-content:center;padding:12px;}
+  .screen{display:none;width:100%;max-width:900px;margin:auto;}
+  .screen.active{display:block;animation:fade .35s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+  .panel{background:var(--panel);border:3px solid var(--panel-b);border-radius:18px;padding:20px;backdrop-filter:blur(3px);
+    box-shadow:0 0 0 2px #04120a,0 0 30px rgba(63,174,42,.4),inset 0 0 30px rgba(63,174,42,.08);}
+
+  h1{font-family:var(--arcade);font-size:clamp(15px,4.2vw,28px);text-align:center;margin:6px 0 4px;
+    color:var(--amber);text-shadow:0 0 8px var(--amber2),0 0 18px rgba(255,180,0,.6),3px 3px 0 #6b3200;}
+  .sub{font-family:var(--arcade);text-align:center;color:var(--green);font-size:clamp(8px,2.4vw,12px);
+    margin:2px 0 16px;text-shadow:0 0 8px var(--green);}
+  h2{font-family:var(--arcade);color:var(--amber);text-align:center;margin:2px 0 12px;
+    font-size:clamp(13px,3.4vw,20px);text-shadow:0 0 8px rgba(255,180,0,.5);}
+  .label{font-family:var(--arcade);color:var(--sky);text-align:center;font-size:clamp(8px,2.2vw,11px);
+    margin:16px 0 8px;text-shadow:0 0 8px var(--sky);}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;
+    font-family:var(--arcade);font-size:clamp(11px,2.8vw,15px);color:#20120a;border:none;border-radius:12px;
+    padding:15px 18px;background:linear-gradient(180deg,#ffcf4a,#e08a00);
+    box-shadow:0 5px 0 #7a4600,0 8px 16px rgba(0,0,0,.5);transition:transform .07s,box-shadow .07s;}
+  .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #7a4600,0 4px 8px rgba(0,0,0,.5);}
+  .btn.green{background:linear-gradient(180deg,#a7ff6b,#3fae2a);box-shadow:0 5px 0 #1a6b12,0 8px 16px rgba(0,0,0,.5);color:#0a1c06;}
+  .btn.blue{background:linear-gradient(180deg,#9fe0ff,#2f9fe0);box-shadow:0 5px 0 #0d4f74,0 8px 16px rgba(0,0,0,.5);}
+  .btn.red{background:linear-gradient(180deg,#ff8f88,#e02a20);box-shadow:0 5px 0 #7a1410,0 8px 16px rgba(0,0,0,.5);color:#fff;}
+  .btn.ghost{background:transparent;color:var(--green);border:2px solid var(--panel-b);box-shadow:none;
+    font-size:clamp(9px,2.4vw,12px);padding:9px 14px;text-shadow:0 0 6px var(--green);}
+  .btn.big{width:100%;padding:18px;font-size:clamp(12px,3.2vw,18px);margin-top:6px;}
+
+  .row2{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .row2 .btn{flex:1;min-width:150px;}
+
+  /* Rejilla de niveles */
+  .grid-lv{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:6px 0;}
+  .lvbtn{aspect-ratio:1;border-radius:12px;border:2px solid var(--panel-b);background:rgba(14,30,16,.7);color:#fff;
+    font-family:var(--arcade);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    transition:.12s;padding:4px;text-align:center;}
+  .lvbtn:active{transform:scale(.93);}
+  .lvbtn .lvn{font-size:clamp(15px,4.6vw,22px);line-height:1;}
+  .lvbtn .lvname{font-family:sans-serif;font-size:9px;color:var(--sky);line-height:1.1;}
+  .lvbtn .lvs{font-size:10px;color:var(--amber);text-shadow:0 0 6px var(--amber);min-height:12px;line-height:1;}
+  .lvbtn.done{border-color:var(--green);box-shadow:0 0 14px rgba(123,214,63,.5);}
+  .lvbtn.locked{opacity:.5;cursor:not-allowed;border-style:dashed;color:#9fb6a0;}
+  .lvbtn.soon{opacity:.4;cursor:not-allowed;border-style:dashed;}
+  .lvbtn.soon .lvname{color:var(--amber);}
+
+  /* ===== ESCENA (LA JUNGLA) ===== */
+  #scGame .panel{padding:0;overflow:hidden;}
+  .isla{position:relative;display:flex;flex-direction:column;}
+  #jungle{position:relative;height:32vh;min-height:190px;max-height:380px;overflow:hidden;outline:none;
+    background:linear-gradient(180deg,#183a1e 0%,#0f2a14 55%,#0a1b0d 100%);
+    border-bottom:7px solid #14260f;box-shadow:inset 0 0 60px rgba(0,0,0,.8),inset 0 0 22px rgba(123,214,63,.1);}
+  #jungle::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:8;
+    background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.5) 100%);}
+  #jungle .canopy{position:absolute;top:-6px;left:0;right:0;font-size:26px;letter-spacing:4px;opacity:.9;z-index:1;
+    text-align:center;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));}
+  #jungle .ground{position:absolute;left:0;right:0;bottom:0;height:30px;z-index:1;
+    background:linear-gradient(180deg,#2a4a1c,#16300f);border-top:3px solid #0c1f08;}
+  #jungle.flash-ok{box-shadow:inset 0 0 60px rgba(123,214,63,.5),inset 0 0 22px rgba(123,214,63,.4);}
+  #jungle.flash-bad{box-shadow:inset 0 0 60px rgba(255,59,48,.5),inset 0 0 22px rgba(255,59,48,.4);}
+
+  #sceneMsg{position:absolute;top:6px;left:0;right:0;text-align:center;font-family:var(--arcade);font-size:9px;
+    color:#ffe;z-index:7;text-shadow:0 0 6px #000;pointer-events:none;}
+
+  #preys{position:absolute;inset:0;z-index:2;}
+  .prey{position:absolute;left:0;top:0;will-change:transform;z-index:2;}
+  .prey .pcore{display:block;transition:filter .2s;line-height:1;}
+  .prey .pcore.eaten{animation:eatenPop .3s ease forwards;}
+  @keyframes eatenPop{to{transform:scale(0) rotate(30deg);opacity:0;}}
+  .prey .pemoji{display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5));}
+
+  /* T-Rex del jugador (abajo, centro) */
+  #trex{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);z-index:3;font-size:clamp(40px,11vw,58px);
+    line-height:1;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6));transition:transform .12s;pointer-events:none;}
+  #trex.lunge{animation:lunge .34s ease;}
+  @keyframes lunge{0%{transform:translateX(-50%) translateY(0) scale(1);}40%{transform:translateX(-50%) translateY(-16px) scale(1.18);}100%{transform:translateX(-50%) translateY(0) scale(1);}}
+
+  #chomp{position:absolute;left:0;top:0;transform:translate(-50%,-50%);font-size:46px;opacity:0;z-index:6;pointer-events:none;}
+  #nom{position:absolute;left:0;top:0;transform:translate(-50%,-50%);z-index:7;opacity:0;pointer-events:none;
+    font-family:var(--arcade);font-size:clamp(12px,3.4vw,18px);color:var(--amber);text-shadow:0 0 8px #000,0 0 10px var(--amber2);}
+
+  /* Mirilla (visor) */
+  #cross{position:absolute;left:50%;top:50%;width:74px;height:74px;transform:translate(-50%,-50%);
+    z-index:6;opacity:0;pointer-events:none;transition:opacity .15s,filter .12s;
+    filter:drop-shadow(0 0 6px rgba(255,180,0,.7));}
+  #cross.on{opacity:1;}
+  #cross.hot{transform:translate(-50%,-50%) scale(.86);filter:drop-shadow(0 0 9px var(--red));}
+  #cross svg{display:block;width:100%;height:100%;}
+
+  /* ===== CUADRO DE MANDOS ===== */
+  .board{position:relative;padding:12px 12px 14px;background:linear-gradient(180deg,#17240f,#0c160a);border-top:3px solid #2a4a1c;}
+  .dhud{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:7px;padding-right:56px;}
+  .dpill{background:rgba(0,0,0,.5);border:2px solid var(--panel-b);border-radius:999px;padding:5px 9px;
+    font-family:var(--arcade);font-size:clamp(8px,2.1vw,10px);color:var(--green);white-space:nowrap;}
+  .dpill.prey{color:var(--amber);border-color:#7a5300;text-shadow:0 0 6px rgba(255,180,0,.5);}
+  .dpill.ok{color:var(--green);border-color:#1a6b12;}
+  .dpill.err{color:#ff9d3d;border-color:#7a4410;}
+  .dprog{height:9px;border-radius:6px;background:rgba(0,0,0,.5);border:1px solid var(--panel-b);overflow:hidden;margin-bottom:7px;}
+  #dProgFill{height:100%;width:0;background:linear-gradient(90deg,#3fae2a,#a7ff6b);box-shadow:0 0 10px var(--green);transition:width .35s;}
+
+  #dState{font-family:var(--arcade);text-align:center;font-size:clamp(9px,2.4vw,12px);margin:2px 0 8px;
+    color:var(--sky);text-shadow:0 0 8px currentColor;letter-spacing:1px;min-height:14px;}
+
+  /* Operación grande */
+  #operation{font-family:var(--arcade);text-align:center;margin:2px 0 10px;padding-right:56px;
+    font-size:clamp(24px,8vw,46px);color:#fff;text-shadow:0 0 10px rgba(255,255,255,.3);
+    display:flex;align-items:center;justify-content:center;gap:clamp(6px,2vw,14px);flex-wrap:wrap;}
+  #operation .op{color:var(--amber);text-shadow:0 0 12px var(--amber2);}
+  #operation .eq{color:#9fb6a0;}
+  #operation .q{color:var(--amber);border-bottom:5px solid var(--amber);padding:0 8px;
+    text-shadow:0 0 14px var(--amber);animation:blink 1.1s infinite;}
+  @keyframes blink{50%{opacity:.4;}}
+
+  /* Ayuda visual con círculos / bloques de diez */
+  #helpWrap{background:rgba(0,0,0,.35);border:2px solid #2a4a1c;border-radius:12px;padding:8px;margin-bottom:10px;
+    max-height:24vh;overflow:auto;box-shadow:inset 0 0 18px rgba(0,0,0,.5);}
+  .tens{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;align-items:flex-start;}
+  .tenblock{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:5px;border-radius:9px;}
+  .tenblock.full{border:2px solid var(--amber);background:rgba(255,180,0,.08);box-shadow:0 0 8px rgba(255,180,0,.25);}
+  .tenblock.partial{border:2px dashed rgba(159,182,160,.5);background:rgba(255,255,255,.03);}
+  .cell{position:relative;width:clamp(13px,3.6vw,19px);height:clamp(13px,3.6vw,19px);border-radius:50%;
+    animation:pop .28s ease both;}
+  .cell.ca{background:radial-gradient(circle at 35% 30%,#c6ff9a,#5cbf2a 70%,#2f7a15);border:1px solid #2f7a15;}
+  .cell.cb{background:radial-gradient(circle at 35% 30%,#ffe08a,#ffab2e 70%,#b8760b);border:1px solid #b8760b;}
+  .cell.struck{background:radial-gradient(circle at 35% 30%,#7a7a7a,#3a3a3a);border:1px solid #2a2a2a;opacity:.45;}
+  .cell.struck::after{content:"✕";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--red);font-family:var(--arcade);font-size:clamp(9px,2.4vw,13px);text-shadow:0 0 4px #000;opacity:.95;}
+  @keyframes pop{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .helpcap{font-family:var(--arcade);text-align:center;font-size:clamp(7px,2vw,10px);color:var(--sky);margin-top:6px;opacity:.9;}
+
+  /* Teclado numérico */
+  #answerArea{max-width:340px;margin:0 auto;}
+  #typed{font-family:var(--arcade);font-size:clamp(24px,8vw,42px);text-align:center;color:var(--amber);
+    background:rgba(0,0,0,.5);border:3px solid var(--panel-b);border-radius:12px;min-height:58px;display:flex;
+    align-items:center;justify-content:center;margin-bottom:9px;outline:none;
+    text-shadow:0 0 12px var(--amber);box-shadow:inset 0 0 18px rgba(63,174,42,.2);}
+  #typed.ok{color:var(--green);border-color:var(--green);text-shadow:0 0 12px var(--green);}
+  #typed.bad{color:var(--red);border-color:var(--red);text-shadow:0 0 12px var(--red);animation:sh .3s;}
+  @keyframes sh{0%,100%{transform:none}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  #typed .cursor{animation:blink .8s infinite;color:var(--sky);}
+  .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .key{padding:15px;font-family:var(--arcade);font-size:clamp(16px,5vw,24px);border-radius:12px;border:2px solid var(--panel-b);
+    background:rgba(14,30,16,.85);color:#fff;cursor:pointer;transition:.08s;}
+  .key:active{transform:scale(.92);background:rgba(63,174,42,.4);}
+  .key.del{color:var(--red);} .key.ok{background:linear-gradient(180deg,#a7ff6b,#3fae2a);color:#0a1c06;border-color:#fff;}
+
+  /* Controles de apuntado */
+  #aimArea{display:none;max-width:340px;margin:0 auto;flex-direction:column;align-items:center;gap:6px;}
+  .dpad{display:grid;grid-template-columns:repeat(3,60px);grid-template-rows:repeat(3,52px);gap:6px;justify-content:center;}
+  .dbtn{border:2px solid var(--panel-b);background:rgba(14,30,16,.85);color:var(--green);border-radius:12px;
+    font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.08s;
+    -webkit-user-select:none;user-select:none;touch-action:none;}
+  .dbtn:active{transform:scale(.92);background:rgba(63,174,42,.4);}
+  .dbtn.up{grid-column:2;grid-row:1;} .dbtn.left{grid-column:1;grid-row:2;}
+  .dbtn.right{grid-column:3;grid-row:2;} .dbtn.down{grid-column:2;grid-row:3;}
+  .dbtn.fire{grid-column:2;grid-row:2;font-size:26px;color:#20120a;border-color:#fff;
+    background:linear-gradient(180deg,#ffcf4a,#e08a00);box-shadow:0 4px 0 #7a4600;animation:firePulse .8s ease-in-out infinite;}
+  @keyframes firePulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);box-shadow:0 4px 0 #7a4600,0 0 22px var(--amber);}}
+  .aimhint{font-family:var(--arcade);font-size:clamp(7px,1.9vw,9px);color:var(--sky);text-align:center;opacity:.85;}
+
+  /* Compañero (placeholder dino) */
+  #pal{position:absolute;right:8px;bottom:6px;width:clamp(46px,13vw,62px);z-index:4;pointer-events:none;
+    text-align:center;font-size:clamp(30px,9vw,46px);line-height:1;filter:drop-shadow(0 3px 5px rgba(0,0,0,.5));
+    transform-origin:50% 90%;animation:palIdle 3s ease-in-out infinite;}
+  #palBubble{position:absolute;right:6px;bottom:74px;max-width:210px;z-index:5;display:none;
+    font-family:var(--arcade);font-size:clamp(8px,2.2vw,11px);line-height:1.6;color:#dfffd0;
+    background:rgba(16,40,18,.96);border:2px solid var(--leaf);border-radius:12px;padding:9px 11px;
+    text-shadow:0 0 6px rgba(123,214,63,.4);box-shadow:0 0 16px rgba(123,214,63,.3);animation:fade .3s ease;}
+  #palBubble b{color:var(--amber);text-shadow:0 0 8px rgba(255,180,0,.6);}
+  #palBubble::after{content:"";position:absolute;right:18px;bottom:-9px;border:7px solid transparent;border-top-color:var(--leaf);}
+  @keyframes palIdle{0%,100%{transform:translateY(0) rotate(0);}50%{transform:translateY(-3px) rotate(-3deg);}}
+
+  /* Resultado / progreso */
+  #dResIcon{font-size:60px;text-align:center;margin:4px 0;}
+  #dResTitle{font-family:var(--arcade);text-align:center;font-size:clamp(15px,4.4vw,26px);margin:6px 0;}
+  #dResStats{text-align:center;font-size:clamp(13px,3.4vw,17px);margin:6px 0 4px;line-height:1.7;}
+  #dResStars{text-align:center;font-size:34px;margin:8px 0;}
+
+  #progGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:6px 0 12px;}
+  .pcard{background:rgba(14,30,16,.7);border:2px solid var(--panel-b);border-radius:12px;padding:10px 6px;text-align:center;}
+  .pcard .pt{font-family:var(--arcade);font-size:15px;color:var(--amber);}
+  .pcard .pl{font-size:10px;color:var(--sky);margin-top:4px;}
+  .pcard .ps{font-size:12px;color:var(--amber);min-height:15px;}
+  .pcard.empty{opacity:.45;}
+  #progOverall{font-family:var(--arcade);text-align:center;font-size:11px;color:var(--green);margin:2px 0 6px;}
+  #resetRow{text-align:center;margin-top:8px;}
+
+  .topbar{position:fixed;top:8px;left:8px;z-index:11;}
+  .muteBtn{position:fixed;top:8px;right:8px;z-index:11;font-size:20px;background:rgba(0,0,0,.5);
+    border:2px solid var(--panel-b);border-radius:10px;width:44px;height:44px;color:#fff;cursor:pointer;}
+
+  @media (max-width:520px){
+    #app{padding:6px;}
+    .grid-lv{grid-template-columns:repeat(3,1fr);} #progGrid{grid-template-columns:repeat(5,1fr);gap:6px;}
+    .panel{padding:14px;}
+    #scGame.active{display:flex;height:100%;}
+    #scGame .panel{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;width:100%;}
+    #scGame .isla{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+    #jungle{flex:1 1 auto;height:auto;min-height:120px;}
+    .board{flex:0 0 auto;padding:9px;}
+    .dpad{grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,44px);}
+    .dhud{padding-right:46px;} #operation{padding-right:46px;font-size:clamp(20px,7vw,34px);}
+    #helpWrap{max-height:20vh;}
+    #typed{min-height:44px;font-size:clamp(20px,7vw,34px);}
+    #pal{width:40px;font-size:34px;bottom:2px;right:2px;} #palBubble{bottom:52px;max-width:160px;font-size:9px;}
+    .pcard .pt{font-size:12px;} .pcard .pl{font-size:8px;}
+  }
+  @media (max-height:560px){
+    #jungle{min-height:110px;} #helpWrap{max-height:16vh;}
+  }
+</style>
+</head>
+<body>
+<canvas id="spores"></canvas>
+<div id="crt"></div>
+<button class="muteBtn" id="muteBtn">🔊</button>
+<div class="topbar"><button class="btn ghost" id="homeBtn" style="display:none">◀ MENÚ</button></div>
+
+<div id="app">
+
+  <!-- NOMBRE / PERFIL -->
+  <section class="screen active" id="scName">
+    <div class="panel" style="text-align:center">
+      <h1>LA ISLA DE LOS NÚMEROS</h1>
+      <p class="sub">SUMAS Y RESTAS · MODO T-REX 🦖</p>
+      <div style="font-size:56px;margin:6px 0">🦖</div>
+      <input id="nameInput" maxlength="12" autocomplete="off" placeholder="TU NOMBRE"
+        style="width:100%;max-width:320px;font-family:var(--arcade);font-size:16px;text-align:center;
+        padding:14px;border-radius:12px;border:3px solid var(--panel-b);background:rgba(0,0,0,.5);
+        color:var(--amber);text-transform:uppercase;box-shadow:inset 0 0 18px rgba(63,174,42,.2)">
+      <button class="btn big" id="enterBtn" style="max-width:320px;margin:12px auto 0">🦖 ¡A CAZAR!</button>
+      <div id="profileList"></div>
+    </div>
+  </section>
+
+  <!-- MENÚ · NIVELES -->
+  <section class="screen" id="scMenu">
+    <div class="panel">
+      <h1>LA ISLA DE LOS NÚMEROS</h1>
+      <p class="sub" id="menuGreet">CAZADOR</p>
+      <div class="label">ELIGE TU CACERÍA · SUMA Y RESTA</div>
+      <div class="grid-lv" id="levelGrid"></div>
+      <button class="btn green big" id="goProg" style="margin-top:12px">🏆 MI PROGRESO</button>
+      <button class="btn ghost" id="switchUser" style="margin:10px auto 0;display:block">👤 CAMBIAR JUGADOR</button>
+      <a class="btn ghost" href="index.html" style="margin:8px auto 0;display:block;max-width:280px;text-decoration:none">🏠 OTROS JUEGOS</a>
+    </div>
+  </section>
+
+  <!-- JUEGO -->
+  <section class="screen" id="scGame">
+    <div class="panel">
+      <div class="isla">
+        <div id="jungle" tabindex="-1" aria-label="La jungla">
+          <div class="canopy" aria-hidden="true">🌴 🌿 🌴 🍃 🌴 🌿 🌴</div>
+          <div id="sceneMsg"></div>
+          <div id="preys"></div>
+          <div id="cross" aria-hidden="true"></div>
+          <div id="chomp">🦖</div>
+          <div id="nom"></div>
+          <div id="trex" aria-hidden="true">🦖</div>
+          <div class="ground" aria-hidden="true"></div>
+        </div>
+        <div class="board">
+          <div id="pal" aria-hidden="true">🦕</div>
+          <div id="palBubble" aria-live="polite"></div>
+          <div class="dhud">
+            <span class="dpill" id="dLevelPill">NIVEL 1</span>
+            <span class="dpill prey" id="dPreyPill">🦕 0/5</span>
+            <span class="dpill ok" id="dOkPill">✔ 0</span>
+            <span class="dpill err" id="dErrPill">✖ 0</span>
+          </div>
+          <div class="dprog" aria-hidden="true"><div id="dProgFill"></div></div>
+          <div id="dState">RESUELVE</div>
+          <div id="operation" aria-live="polite"></div>
+          <div id="helpWrap"></div>
+          <div id="answerArea">
+            <div id="typed" tabindex="-1" aria-label="Tu respuesta"></div>
+            <div class="keys" id="keys"></div>
+          </div>
+          <div id="aimArea">
+            <div class="dpad">
+              <button class="dbtn up" id="dUp" aria-label="Mover arriba">▲</button>
+              <button class="dbtn left" id="dLeft" aria-label="Mover izquierda">◀</button>
+              <button class="dbtn fire" id="dFire" aria-label="Cazar">🔥</button>
+              <button class="dbtn right" id="dRight" aria-label="Mover derecha">▶</button>
+              <button class="dbtn down" id="dDown" aria-label="Mover abajo">▼</button>
+            </div>
+            <div class="aimhint">FLECHAS/WASD MUEVEN · ESPACIO O 🔥 CAZA</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTADO -->
+  <section class="screen" id="scResult">
+    <div class="panel">
+      <div id="dResIcon"></div>
+      <div id="dResTitle"></div>
+      <div id="dResStats"></div>
+      <div id="dResStars"></div>
+      <p class="sub" id="dResMsg"></p>
+      <div class="row2">
+        <button class="btn blue big" id="dRetry">🔁 REPETIR</button>
+        <button class="btn green big" id="dNext">➡️ SIGUIENTE</button>
+        <button class="btn big" id="dMenu">🏠 MENÚ</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROGRESO -->
+  <section class="screen" id="scProg">
+    <div class="panel">
+      <h2>🏆 MI PROGRESO</h2>
+      <div id="progOverall"></div>
+      <div id="progGrid"></div>
+      <div id="resetRow"></div>
+      <button class="btn ghost" id="progBack" style="margin:12px auto 0;display:block">◀ MENÚ</button>
+    </div>
+  </section>
+
+</div>
+
+<!-- ☁️ Firebase: sincroniza el progreso por nombre entre dispositivos.
+     Reutiliza el proyecto "dante-mates" pero escribe en OTRA rama (dino_profiles),
+     así no pisa el juego de multiplicaciones. -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyDLc34x_qbYk-WkbPbQtP-S1ONNnU6ZEAU",
+    authDomain: "dante-mates.firebaseapp.com",
+    databaseURL: "https://dante-mates-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "dante-mates",
+    storageBucket: "dante-mates.firebasestorage.app",
+    messagingSenderId: "696890882370",
+    appId: "1:696890882370:web:beba6a7448e5d0aea9b0db"
+  };
+  const keyOf = n => 'dino_profiles/' + String(n||'').toLowerCase().trim().replace(/[.#$\[\]\/\s]+/g,'_');
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    window.cloudGet = async (name) => {
+      try { const s = await get(ref(db, keyOf(name))); return s.exists() ? s.val() : null; }
+      catch(e){ console.warn('cloudGet', e); return undefined; }   // undefined = error de red
+    };
+    window.cloudSet = async (name, data) => {
+      try { await set(ref(db, keyOf(name)), data); return true; }
+      catch(e){ console.warn('cloudSet', e); return false; }
+    };
+    window.cloudReady = true;
+  } catch(e){ console.warn('Firebase init falló', e); window.cloudReady = false; }
+</script>
+
+<script>
+/* =========================================================================
+   🦖 LA ISLA DE LOS NÚMEROS · sumas y restas
+   Reutiliza la arquitectura de "La Galaxia de las Mates":
+   - pantallas de una sola página + show()
+   - perfiles por nombre + guardado local + sincronización Firebase (rama distinta)
+   - mecánica de visor/caza del modo "Caza Estelar"
+   ========================================================================= */
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+/* ---------- PLACEHOLDERS DE ASSETS (fáciles de sustituir por imágenes propias) ----------
+   Cambia estos por <img src="..."> o SVG cuando tengas los dibujos definitivos. */
+const PLAYER_ICON='🦖';          // el jugador (T-Rex)
+const PREY_ICON='🦕';            // la presa (triceratops, placeholder)
+function preyHTML(size){ return `<span class="pemoji" style="font-size:${size}px">${PREY_ICON}</span>`; }
+const PAL_ICON='🦕';             // compañero que da pistas
+const CROSS_SVG=`<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="40" cy="40" r="30" fill="none" stroke="#ffb400" stroke-width="2.8" opacity=".95"/>
+  <circle cx="40" cy="40" r="19" fill="none" stroke="#ffb400" stroke-width="1" opacity=".5"/>
+  <line x1="40" y1="5" x2="40" y2="24" stroke="#ffb400" stroke-width="2.8"/>
+  <line x1="40" y1="56" x2="40" y2="75" stroke="#ffb400" stroke-width="2.8"/>
+  <line x1="5" y1="40" x2="24" y2="40" stroke="#ffb400" stroke-width="2.8"/>
+  <line x1="56" y1="40" x2="75" y2="40" stroke="#ffb400" stroke-width="2.8"/>
+  <circle cx="40" cy="40" r="2.8" fill="#ffb400"/></svg>`;
+
+/* =========================================================================
+   CONFIGURACIÓN DE NIVELES
+   20 niveles en 4 bloques de 5. AHORA solo están implementados los 5 primeros;
+   del 6 al 20 quedan como marcadores (bloque "future") listos para rellenar.
+   - need : triceratops a cazar para completar el nivel (ajustable)
+   - sim  : presas simultáneas en pantalla
+   - size : tamaño de la presa (px)  ·  speed : velocidad de vagabundeo
+   - tol  : tolerancia de puntería (× radio de la presa; mayor = más fácil)
+   - ops  : reglas del generador de operaciones (ver genOp)
+   ========================================================================= */
+const IMPL_MAX=5;        // niveles jugables ahora mismo
+const TOTAL_LEVELS=20;   // se mostrarán como "PRONTO" los no implementados
+
+const DINO_LEVELS=[
+  { n:1, name:'CRÍA', need:5, sim:2, size:64, speed:0.45, tol:2.4,
+    ops:{ sumWeight:0.55,
+      sum:{aMin:1,aMax:5, bMin:1,bMax:5, resMin:2, resMax:9},
+      sub:{mMin:3,mMax:9, sMin:1,sMax:5, resMin:1} } },
+
+  { n:2, name:'JOVEN', need:5, sim:2, size:60, speed:0.60, tol:2.3,
+    ops:{ sumWeight:0.50,
+      sum:{aMin:1,aMax:9, bMin:1,bMax:9, resMin:3, resMax:18},
+      sub:{mMin:3,mMax:9, sMin:1,sMax:8, resMin:1} } },
+
+  { n:3, name:'RASTREADOR', need:5, sim:3, size:56, speed:0.80, tol:2.2, noCarry:true,
+    ops:{ sumWeight:0.50, noCarry:true,
+      sum:{aMin:10,aMax:19, bMin:1,bMax:9, resMin:11, resMax:28},   // dos dígitos + un dígito, sin llevar
+      sub:{mMin:10,mMax:20, sMin:1,sMax:9, resMin:1} } },           // sin pedir prestado
+
+  { n:4, name:'DEPREDADOR', need:5, sim:3, size:52, speed:1.00, tol:2.1,
+    ops:{ sumWeight:0.50,
+      sum:{aMin:10,aMax:40, bMin:2,bMax:22, resMin:14, resMax:58},  // con alguna llevada
+      sub:{mMin:15,mMax:42, sMin:2,sMax:22, resMin:1} } },          // con algún préstamo
+
+  { n:5, name:'REY', need:5, sim:4, size:48, speed:1.20, tol:2.0,
+    ops:{ sumWeight:0.50,
+      sum:{aMin:15,aMax:50, bMin:10,bMax:40, resMin:26, resMax:95}, // hasta ~50, con llevada
+      sub:{mMin:20,mMax:52, sMin:10,sMax:46, resMin:1} } },         // hasta ~50, con préstamo
+];
+
+/* Nombres/emoji de los bloques futuros (solo decorativos por ahora) */
+const FUTURE_LABELS={6:'🌋',7:'🌋',8:'🌋',9:'🌋',10:'🌋',11:'🐊',12:'🐊',13:'🐊',14:'🐊',15:'🐊',
+  16:'🦅',17:'🦅',18:'🦅',19:'🦅',20:'🏆'};
+
+let state={};   // estado ligero global (reservado para el futuro)
+
+/* =========================================================================
+   SONIDO (Web Audio API, sin archivos) — igual que el juego base
+   ========================================================================= */
+let audioOn=true,actx=null,audioUnlocked=false;
+function ac(){if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+  if(actx&&actx.state==='suspended'){try{actx.resume();}catch(e){}} return actx;}
+function unlockAudio(){const c=ac();if(!c)return;try{c.resume();}catch(e){}
+  if(!audioUnlocked){try{const b=c.createBuffer(1,1,22050),s=c.createBufferSource();s.buffer=b;s.connect(c.destination);
+    (s.start?s.start(0):s.noteOn(0));audioUnlocked=true;}catch(e){}}}
+['pointerdown','touchstart','touchend','mousedown','click','keydown'].forEach(ev=>
+  addEventListener(ev,unlockAudio,{passive:true,capture:true}));
+function beep(f,d,t='sine',v=.2){if(!audioOn)return;const c=ac();if(!c)return;
+  try{const o=c.createOscillator(),g=c.createGain();o.type=t;o.frequency.value=f;o.connect(g);g.connect(c.destination);
+    g.gain.setValueAtTime(v,c.currentTime);g.gain.exponentialRampToValueAtTime(1e-4,c.currentTime+d);o.start();o.stop(c.currentTime+d);}catch(e){}}
+const sndCorrect=()=>{beep(660,.1,'square',.18);setTimeout(()=>beep(990,.14,'square',.18),90);};
+const sndWrong=()=>beep(150,.25,'sawtooth',.22);
+const sndTap=()=>beep(560,.05,'square',.1);
+function sndRoar(){if(!audioOn)return;const c=ac();if(!c)return;try{const o=c.createOscillator(),g=c.createGain();
+  o.type='sawtooth';o.frequency.setValueAtTime(220,c.currentTime);o.frequency.exponentialRampToValueAtTime(70,c.currentTime+.35);
+  g.gain.setValueAtTime(.22,c.currentTime);g.gain.exponentialRampToValueAtTime(1e-4,c.currentTime+.36);
+  o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.36);}catch(e){}}
+const sndChomp=()=>{beep(120,.09,'square',.2);setTimeout(()=>beep(70,.12,'sawtooth',.2),70);};
+const sndMiss=()=>beep(120,.16,'triangle',.16);
+const sndWin=()=>[523,659,784,1046,1318].forEach((f,i)=>setTimeout(()=>beep(f,.18,'triangle',.2),i*120));
+const sndLock=()=>{beep(880,.05,'square',.12);setTimeout(()=>beep(1320,.06,'square',.12),60);};
+$('#muteBtn').onclick=()=>{audioOn=!audioOn;$('#muteBtn').textContent=audioOn?'🔊':'🔇';if(audioOn)beep(700,.08,'square',.14);};
+
+/* =========================================================================
+   FONDO: esporas/luciérnagas flotando (adaptado del campo de estrellas)
+   ========================================================================= */
+(function(){const cv=$('#spores'),ctx=cv.getContext('2d');let W,H,ps=[];
+  function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;ps=[];
+    for(let i=0;i<90;i++)ps.push({x:Math.random()*W,y:Math.random()*H,z:Math.random()*1.6+.4,s:Math.random()*1.8+.6,
+      hue:Math.random()<.5?'#7bd63f':'#ffb400',ph:Math.random()*6});}
+  addEventListener('resize',resize);resize();
+  (function loop(){ctx.clearRect(0,0,W,H);
+    for(const p of ps){p.y-=p.z*.25;p.ph+=.03;p.x+=Math.sin(p.ph)*.3;if(p.y<0){p.y=H;p.x=Math.random()*W;}
+      ctx.globalAlpha=.25+p.z*.2*(0.6+0.4*Math.sin(p.ph));ctx.fillStyle=p.hue;ctx.fillRect(p.x,p.y,p.s,p.s);}
+    ctx.globalAlpha=1;requestAnimationFrame(loop);})();
+})();
+
+/* =========================================================================
+   PROGRESO POR JUGADOR (local) + SINCRONIZACIÓN NUBE
+   Clave DISTINTA a la del juego de multiplicaciones para no pisarlo.
+   store = { current, profiles: { NOMBRE: { levels: { n: {plays,bestStars,passed,fewestErr,bestTime} } } } }
+   ========================================================================= */
+const SKEY='dante_dino_v1';
+const loadStore=()=>{try{return JSON.parse(localStorage.getItem(SKEY))||{current:null,profiles:{}};}catch(e){return{current:null,profiles:{}};}};
+const saveStore=s=>{try{localStorage.setItem(SKEY,JSON.stringify(s));}catch(e){}};
+const loadProg=()=>{const s=loadStore();return (s.current&&s.profiles[s.current])||{levels:{}};};
+const saveProg=p=>{const s=loadStore();if(!s.current)return;s.profiles[s.current]=p;saveStore(s);};
+const currentName=()=>loadStore().current;
+
+function recordLevel(n,stars,passed,errors,questions,timeMs){
+  const p=loadProg();const L=p.levels||(p.levels={});
+  const rec=L[n]||(L[n]={plays:0,bestStars:0,passed:false,fewestErr:999,bestTime:0});
+  rec.plays++;rec.bestStars=Math.max(rec.bestStars,stars);
+  if(passed){rec.passed=true;rec.fewestErr=Math.min(rec.fewestErr,errors);
+    if(!rec.bestTime||timeMs<rec.bestTime)rec.bestTime=timeMs;}
+  saveProg(p);cloudPush();
+}
+const levelStars=n=>{const r=loadProg().levels?.[n];return r?r.bestStars:0;};
+const levelPassed=n=>{const r=loadProg().levels?.[n];return !!(r&&r.passed);};
+const bestLevel=()=>{const L=loadProg().levels||{};let b=0;for(let i=1;i<=IMPL_MAX;i++)if(L[i]&&L[i].passed)b=i;return b;};
+const unlockedLevel=()=>Math.min(bestLevel()+1,IMPL_MAX);   // hasta dónde puede jugar
+
+function enterProfile(name){
+  name=(name||'').trim();if(!name)return false;
+  const s=loadStore();if(!s.profiles[name])s.profiles[name]={levels:{}};
+  s.current=name;saveStore(s);return true;
+}
+
+/* ☁️ Fusión de progreso (máximos por nivel) */
+function mergeProfiles(a,b){
+  a=a||{levels:{}}; b=b||{levels:{}};
+  const out={levels:{}}, la=a.levels||{}, lb=b.levels||{};
+  new Set([...Object.keys(la),...Object.keys(lb)]).forEach(k=>{
+    const X=la[k]||{}, Y=lb[k]||{};
+    const fe=Math.min(X.fewestErr??999,Y.fewestErr??999);
+    const bt=Math.min(X.bestTime||1/0,Y.bestTime||1/0);
+    out.levels[k]={plays:Math.max(X.plays||0,Y.plays||0),bestStars:Math.max(X.bestStars||0,Y.bestStars||0),
+      passed:!!(X.passed||Y.passed),fewestErr:isFinite(fe)?fe:999,bestTime:isFinite(bt)?bt:0};
+  });
+  return out;
+}
+function cloudPush(){const name=loadStore().current;if(name&&window.cloudSet)window.cloudSet(name,loadProg());}
+async function cloudSync(name){
+  if(!window.cloudGet)return;
+  const remote=await window.cloudGet(name);
+  if(remote===undefined)return;                 // error de red → seguimos con lo local
+  const merged=mergeProfiles(loadProg(),remote||{levels:{}});
+  saveProg(merged);
+  if(window.cloudSet)window.cloudSet(name,merged);
+}
+
+/* =========================================================================
+   NAVEGACIÓN
+   ========================================================================= */
+function show(id){
+  if(dg&&id!=='#scGame')gameCleanup();   // detiene bucle/timers/listeners al salir del juego
+  $$('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');
+  $('#homeBtn').style.display=(id==='#scMenu'||id==='#scName')?'none':'inline-flex';
+}
+$('#homeBtn').onclick=()=>show('#scMenu');
+
+/* =========================================================================
+   NOMBRE / PERFIL
+   ========================================================================= */
+function goMenu(){$('#menuGreet').textContent='CAZADOR: '+((currentName()||'').toUpperCase());buildLevelGrid();show('#scMenu');}
+async function doEnter(){
+  if(!enterProfile($('#nameInput').value)){$('#nameInput').focus();return;}
+  sndTap();
+  const eb=$('#enterBtn'),old=eb.textContent;
+  eb.textContent='☁ SINCRONIZANDO…';eb.style.pointerEvents='none';
+  try{await cloudSync(currentName());}catch(e){}
+  eb.textContent=old;eb.style.pointerEvents='';
+  goMenu();
+}
+function initName(){const s=loadStore();$('#nameInput').value=s.current||'';
+  const names=Object.keys(s.profiles);
+  $('#profileList').innerHTML=names.length
+    ?`<div class="label">O CONTINÚA COMO</div>`+names.map(n=>`<button class="btn ghost prof" data-n="${n}" style="margin:3px">${n.toUpperCase()}</button>`).join('')
+    :'';
+  $$('#profileList .prof').forEach(b=>b.onclick=()=>{ac();$('#nameInput').value=b.dataset.n;doEnter();});}
+$('#enterBtn').onclick=()=>{ac();doEnter();};
+$('#nameInput').addEventListener('keydown',e=>{if(e.key==='Enter'){ac();doEnter();}});
+$('#switchUser').onclick=()=>{initName();show('#scName');};
+
+/* =========================================================================
+   MENÚ · REJILLA DE NIVELES
+   ========================================================================= */
+function buildLevelGrid(){
+  const unl=unlockedLevel();let html='';
+  for(let i=1;i<=TOTAL_LEVELS;i++){
+    if(i<=IMPL_MAX){
+      const L=DINO_LEVELS[i-1],st=levelStars(i),done=levelPassed(i),locked=i>unl;
+      html+=`<button class="lvbtn ${done?'done':''} ${locked?'locked':''}" data-n="${i}" ${locked?'disabled':''}>
+        <span class="lvn">${locked?'🔒':i}</span>
+        <span class="lvname">${locked?('SUPERA '+(i-1)):L.name}</span>
+        <span class="lvs">${st>0?'★'.repeat(st):(done?'✓':'&nbsp;')}</span></button>`;
+    }else{
+      html+=`<button class="lvbtn soon" data-n="${i}" disabled>
+        <span class="lvn">${FUTURE_LABELS[i]||'🔒'}</span>
+        <span class="lvname">PRONTO</span><span class="lvs">&nbsp;</span></button>`;
+    }
+  }
+  $('#levelGrid').innerHTML=html;
+  $$('#levelGrid .lvbtn:not([disabled])').forEach(b=>b.onclick=()=>{sndTap();startLevel(DINO_LEVELS[(+b.dataset.n)-1]);});
+}
+$('#goProg').onclick=()=>{ac();showProgress();};
+
+/* =========================================================================
+   GENERADOR DE OPERACIONES (reglas duras)
+   - restas nunca negativas (minuendo ≥ sustraendo)
+   - mezcla sumas y restas; evita repetir la misma operación seguida
+   ========================================================================= */
+function genOp(level,prevKey,prevIsSum){
+  const P=level.ops;
+  for(let tries=0;tries<300;tries++){
+    let isSum=Math.random()<(P.sumWeight??0.5);
+    // fomenta la mezcla: si la anterior fue del mismo tipo, cambia con frecuencia
+    if(prevIsSum!==null&&prevIsSum!==undefined&&isSum===prevIsSum&&Math.random()<0.6)isSum=!isSum;
+    let x,y,res,op;
+    if(isSum){
+      x=rnd(P.sum.aMin,P.sum.aMax);y=rnd(P.sum.bMin,P.sum.bMax);res=x+y;op='+';
+      if(res<P.sum.resMin||res>P.sum.resMax)continue;
+      if((level.noCarry||P.noCarry)&&((x%10)+(y%10))>=10)continue;     // sin llevar
+    }else{
+      x=rnd(P.sub.mMin,P.sub.mMax);
+      const sMax=Math.min(P.sub.sMax,x-1);if(sMax<P.sub.sMin)continue;
+      y=rnd(P.sub.sMin,sMax);res=x-y;op='-';
+      if(res<P.sub.resMin)continue;
+      if((level.noCarry||P.noCarry)&&((x%10)-(y%10))<0)continue;        // sin pedir prestado
+    }
+    const key=x+op+y;
+    if(key===prevKey)continue;                                          // no repetir idéntica
+    return {op,x,y,res,answer:res,isSum,key};
+  }
+  // Respaldo defensivo (no debería hacer falta): una suma sencilla
+  const x=rnd(1,5),y=rnd(1,4);return {op:'+',x,y,res:x+y,answer:x+y,isSum:true,key:x+'+'+y};
+}
+
+/* =========================================================================
+   AYUDA VISUAL CON CÍRCULOS (bloques de diez + unidades)
+   - suma a+b: a círculos color A + b color B, se cuentan todos
+   - resta a-b: a círculos y se TACHAN los b últimos (quedan a-b)
+   ========================================================================= */
+function renderHelp(q){
+  const cells=[];
+  if(q.op==='+'){
+    for(let i=0;i<q.x;i++)cells.push({c:'ca'});
+    for(let i=0;i<q.y;i++)cells.push({c:'cb'});
+  }else{
+    for(let i=0;i<q.x;i++)cells.push({c:'ca'});
+    for(let i=q.x-q.y;i<q.x;i++)cells[i].struck=true;   // tacha los que se quitan
+  }
+  let blocks='';
+  for(let start=0;start<cells.length;start+=10){
+    const chunk=cells.slice(start,start+10),full=chunk.length===10;
+    blocks+=`<div class="tenblock ${full?'full':'partial'}">`;
+    chunk.forEach((cell,idx)=>{
+      const delay=Math.min((start+idx)*0.008,0.4);
+      blocks+=`<span class="cell ${cell.c} ${cell.struck?'struck':''}" style="animation-delay:${delay}s"></span>`;
+    });
+    blocks+='</div>';
+  }
+  const cap=q.op==='+'
+    ? 'Cuenta TODOS los círculos 🟢🟠'
+    : `Tacha ${q.y} · cuenta los que QUEDAN`;
+  $('#helpWrap').innerHTML=`<div class="tens">${blocks}</div><div class="helpcap">${cap}</div>`;
+}
+
+/* =========================================================================
+   ESTADO DEL JUEGO (dg) + COMPAÑERO/HUD
+   ========================================================================= */
+let dg=null, curLevel=null, keyHandler=null, keyUpHandler=null, wired=false;
+let keys={left:false,right:false,up:false,down:false};
+const jungle=$('#jungle');
+
+const DSTATE={answer:['RESUELVE','var(--sky)'],aim:['¡APUNTA Y CAZA!','var(--amber)'],
+  correct:['¡BIEN!','var(--green)'],wrong:['CASI…','#ff9d3d'],
+  hit:['¡ÑAM! CAZADO','var(--green)'],miss:['SE ESCAPÓ','#ff9d3d'],
+  win:['¡FESTÍN!','var(--green)']};
+function setState(s){const el=$('#dState'),d=DSTATE[s]||DSTATE.answer;el.textContent=d[0];el.style.color=d[1];}
+function palSay(html){const b=$('#palBubble');b.innerHTML=html;b.style.display='block';}
+function palHush(){const b=$('#palBubble');b.style.display='none';b.innerHTML='';}
+const PAL_ENDINGS=['¡Tú puedes!','¡La próxima la cazas!','¡A por otra!','¡No pasa nada!'];
+
+function updateHud(){
+  $('#dLevelPill').textContent='NIVEL '+dg.level.n;
+  $('#dPreyPill').textContent='🦕 '+dg.hunted+'/'+dg.need;
+  $('#dOkPill').textContent='✔ '+dg.correct;
+  $('#dErrPill').textContent='✖ '+dg.errors;
+  $('#dProgFill').style.width=Math.min(100,Math.round(dg.hunted/dg.need*100))+'%';
+}
+function flash(kind){const w=jungle;w.classList.remove('flash-ok','flash-bad');void w.offsetWidth;
+  w.classList.add(kind==='ok'?'flash-ok':'flash-bad');setTimeout(()=>w.classList.remove('flash-ok','flash-bad'),350);}
+
+/* Teclado numérico */
+function buildKeypad(){const layout=['1','2','3','4','5','6','7','8','9','del','0','ok'];
+  $('#keys').innerHTML=layout.map(k=>k==='del'?`<button class="key del" data-k="del" aria-label="Borrar">⌫</button>`:
+    k==='ok'?`<button class="key ok" data-k="ok" aria-label="Comprobar">✓</button>`:`<button class="key" data-k="${k}">${k}</button>`).join('');
+  $$('#keys .key').forEach(b=>b.onclick=()=>keyPress(b.dataset.k));}
+function renderTyped(){$('#typed').innerHTML=dg.typed===''?`<span class="cursor">_</span>`:dg.typed;}
+function keyPress(k){
+  if(!dg||dg.phase!=='answer'||dg.locked)return;
+  if(k==='del'){dg.typed=dg.typed.slice(0,-1);sndTap();$('#typed').className='';renderTyped();return;}
+  if(k==='ok'){if(dg.typed==='')return;answer(parseInt(dg.typed,10));return;}
+  if(dg.typed.length<3){dg.typed+=k;sndTap();$('#typed').className='';renderTyped();}
+}
+
+/* =========================================================================
+   PRESAS (triceratops): aparición sin solaparse + vagabundeo
+   ========================================================================= */
+function spawnPrey(){
+  const W=jungle.clientWidth,H=jungle.clientHeight,size=dg.level.size,er=size*0.5;
+  const leftB=10+er,rightB=W-10-er,topB=30+er,botB=H-44-er;
+  let x,y,tries=0;
+  do{ x=rnd(Math.round(leftB),Math.round(Math.max(leftB+1,rightB)));
+      y=rnd(Math.round(topB),Math.round(Math.max(topB+1,botB)));tries++; }
+  while(tries<24&&dg.preys.some(e=>!e.dead&&Math.hypot(e.x-x,e.y-y)<(er+e.r)*1.05));
+  const el=document.createElement('div');el.className='prey';el.style.width=size+'px';
+  el.innerHTML=`<div class="pcore">${preyHTML(size)}</div>`;
+  el.style.transform=`translate(${x}px,${y}px) translate(-50%,-50%)`;
+  $('#preys').appendChild(el);
+  const sp=dg.level.speed,ang=Math.random()*Math.PI*2;
+  dg.preys.push({el,x,y,r:er,dead:false,vx:Math.cos(ang)*sp*0.45,vy:Math.sin(ang)*sp*0.28,
+    sway:Math.random()*Math.PI*2,swaySpd:0.02+Math.random()*0.03*sp});
+}
+function maintainHerd(){
+  if(!dg)return;
+  const remaining=dg.need-dg.hunted;
+  const want=Math.max(0,Math.min(dg.level.sim,remaining));
+  let alive=dg.preys.filter(e=>!e.dead).length;
+  while(alive<want){spawnPrey();alive++;}
+}
+
+/* Bucle de animación (presas vagando + mirilla en fase de apuntar) */
+function loop(){
+  if(!dg)return;
+  const W=jungle.clientWidth,H=jungle.clientHeight,sp=dg.level.speed;
+  const leftB=10,rightB=W-10,topB=28,botB=H-44;
+  dg.preys.forEach(e=>{
+    if(e.dead)return;
+    e.sway+=e.swaySpd;
+    e.x+=e.vx+Math.cos(e.sway)*sp*0.35;
+    e.y+=e.vy+Math.sin(e.sway*1.3)*sp*0.22;
+    if(e.x<leftB+e.r){e.x=leftB+e.r;e.vx=Math.abs(e.vx);}
+    if(e.x>rightB-e.r){e.x=rightB-e.r;e.vx=-Math.abs(e.vx);}
+    if(e.y<topB+e.r){e.y=topB+e.r;e.vy=Math.abs(e.vy);}
+    if(e.y>botB-e.r){e.y=botB-e.r;e.vy=-Math.abs(e.vy);}
+    e.el.style.transform=`translate(${e.x}px,${e.y}px) translate(-50%,-50%)`;
+  });
+  if(dg.phase==='aim'){
+    const step=5.5;
+    if(keys.left)dg.cx-=step; if(keys.right)dg.cx+=step; if(keys.up)dg.cy-=step; if(keys.down)dg.cy+=step;
+    dg.cx=Math.max(12,Math.min(W-12,dg.cx)); dg.cy=Math.max(12,Math.min(H-40,dg.cy));
+    const c=$('#cross');c.style.left=dg.cx+'px';c.style.top=dg.cy+'px';
+    const tol=dg.level.tol||2;let hot=false;
+    dg.preys.forEach(e=>{if(!e.dead&&Math.hypot(e.x-dg.cx,e.y-dg.cy)<=e.r*tol)hot=true;});
+    c.classList.toggle('hot',hot);
+  }
+  dg.anim=requestAnimationFrame(loop);
+}
+
+/* =========================================================================
+   FASE 1 · RESPONDER
+   ========================================================================= */
+function nextQuestion(){
+  if(!dg)return;
+  const q=genOp(dg.level,dg.prevKey,dg.prevIsSum);
+  dg.q=q;dg.prevKey=q.key;dg.prevIsSum=q.isSum;
+  dg.phase='answer';dg.locked=false;dg.typed='';
+  $('#aimArea').style.display='none';$('#answerArea').style.display='block';
+  $('#helpWrap').style.display='block';
+  $('#cross').classList.remove('on','hot');
+  $('#typed').className='';palHush();$('#sceneMsg').textContent='';
+  $('#operation').innerHTML=`<span class="num">${q.x}</span><span class="op">${q.op}</span><span class="num">${q.y}</span><span class="eq">=</span><span class="q">?</span>`;
+  renderHelp(q);renderTyped();updateHud();setState('answer');
+  try{$('#typed').focus();}catch(e){}
+}
+function answer(val){
+  if(!dg||dg.locked)return;dg.locked=true;dg.questions++;
+  const q=dg.q,ok=val===q.answer,tb=$('#typed');
+  if(ok){
+    tb.className='ok';tb.textContent=val;
+    dg.correct++;sndCorrect();flash('ok');setState('correct');updateHud();
+    $('#pal').textContent='😃';
+    startAim();
+  }else{
+    tb.className='bad';tb.textContent=dg.typed||val;
+    dg.errors++;sndWrong();flash('bad');setState('wrong');updateHud();
+    $('#pal').textContent='😮';
+    // el compañero enseña la solución (sin castigo, aprendizaje)
+    palSay(`<b>${q.x} ${q.op} ${q.y} = ${q.res}</b><br>${PAL_ENDINGS[rnd(0,PAL_ENDINGS.length-1)]}`);
+    setTimeout(()=>{if(dg)tb.textContent=q.res+' ✔';},500);
+    dg.resolveTO=setTimeout(()=>{$('#pal').textContent=PAL_ICON;nextQuestion();},1900);
+  }
+}
+
+/* =========================================================================
+   FASE 2 · APUNTAR Y CAZAR (tras acertar; un solo disparo)
+   ========================================================================= */
+function startAim(){
+  dg.phase='aim';dg.canFire=true;
+  const W=jungle.clientWidth,H=jungle.clientHeight;
+  dg.cx=W/2;dg.cy=H*0.5;
+  const c=$('#cross');c.style.left=dg.cx+'px';c.style.top=dg.cy+'px';c.classList.remove('hot');c.classList.add('on');
+  palHush();sndLock();setState('aim');$('#sceneMsg').textContent='APUNTA A UN 🦕 Y CÁZALO';
+  $('#answerArea').style.display='none';$('#helpWrap').style.display='none';$('#aimArea').style.display='flex';
+  maintainHerd();
+  try{$('#dFire').focus();}catch(e){}
+}
+function fire(){
+  if(!dg||dg.phase!=='aim'||!dg.canFire)return;
+  dg.canFire=false;Object.keys(keys).forEach(k=>keys[k]=false);
+  const c=$('#cross'),tol=dg.level.tol||2;
+  // puntería generosa: primero dentro del radio; si no, la presa más cercana dentro de la tolerancia
+  let target=null,best=1e9;
+  dg.preys.forEach(e=>{if(e.dead)return;const d=Math.hypot(e.x-dg.cx,e.y-dg.cy);if(d<best){best=d;target=e;}});
+  const hit=target && best<=target.r*tol;
+  $('#trex').classList.remove('lunge');void $('#trex').offsetWidth;$('#trex').classList.add('lunge');
+  if(hit){
+    sndRoar();sndChomp();
+    target.dead=true;const core=target.el.querySelector('.pcore');if(core)core.classList.add('eaten');
+    chompAt(target.x,target.y);nomAt(target.x,target.y);
+    dg.hunted++;setState('hit');flash('ok');updateHud();$('#pal').textContent='🥳';
+    setTimeout(()=>{if(target.el.parentNode)target.el.parentNode.removeChild(target.el);
+      if(dg){dg.preys=dg.preys.filter(e=>e!==target);maintainHerd();}},300);
+    $('#sceneMsg').textContent=(dg.hunted>=dg.need)?'¡MANADA CAZADA!':('QUEDAN '+(dg.need-dg.hunted)+' 🦕');
+  }else{
+    sndMiss();setState('miss');$('#pal').textContent='😵';
+    $('#sceneMsg').textContent='¡SE TE ESCAPÓ! OTRA OPERACIÓN';
+  }
+  c.classList.remove('on','hot');
+  dg.resolveTO=setTimeout(()=>{$('#pal').textContent=PAL_ICON;afterHunt();},950);
+}
+function afterHunt(){
+  if(!dg)return;
+  if(dg.hunted>=dg.need)return endLevel(true);
+  nextQuestion();
+}
+function chompAt(x,y){const b=$('#chomp');b.style.left=x+'px';b.style.top=y+'px';b.style.transition='none';
+  b.style.transform='translate(-50%,-50%) scale(.4)';b.style.opacity='1';
+  requestAnimationFrame(()=>{b.style.transition='transform .3s ease,opacity .4s';b.style.transform='translate(-50%,-50%) scale(1.5)';});
+  setTimeout(()=>b.style.opacity='0',360);}
+function nomAt(x,y){const n=$('#nom');n.textContent='¡ÑAM!';n.style.left=x+'px';n.style.top=(y-6)+'px';n.style.transition='none';
+  n.style.transform='translate(-50%,-50%) scale(.6)';n.style.opacity='1';
+  requestAnimationFrame(()=>{n.style.transition='transform .5s ease,opacity .6s';n.style.transform='translate(-50%,-140%) scale(1.1)';});
+  setTimeout(()=>n.style.opacity='0',560);}
+
+/* =========================================================================
+   FIN DE NIVEL (siempre se completa cazando la manada; sin "perder")
+   ========================================================================= */
+function endLevel(win){
+  clearTimeout(dg.resolveTO);dg.phase='over';
+  const L=dg.level,timeMs=Date.now()-dg.startTime;
+  const questions=dg.questions,correct=dg.correct,errors=dg.errors,hunted=dg.hunted;
+  const acc=questions?Math.round(correct/questions*100):0;
+  let stars=1;if(errors<=2)stars=2;if(errors===0)stars=3;
+  const prevBest=bestLevel();
+  recordLevel(L.n,stars,true,errors,questions,timeMs);
+  buildLevelGrid();
+  sndWin();setState('win');$('#pal').textContent='🥳';
+  const secs=Math.round(timeMs/1000);
+  $('#dResIcon').textContent='🦖🏆';
+  $('#dResTitle').textContent='¡NIVEL SUPERADO!';$('#dResTitle').style.color='var(--green)';
+  $('#dResStats').innerHTML=`Nivel <b>${L.n}</b> · ${L.name}<br>
+    🦕 Cazados: <b style="color:var(--green)">${hunted}</b> / ${L.need}<br>
+    Operaciones: <b>${questions}</b> · ✔ <b style="color:var(--green)">${correct}</b> · ✖ <b style="color:#ff9d3d">${errors}</b><br>
+    Aciertos: <b>${acc}%</b><br>
+    ⏱ Tiempo: <b>${secs}s</b>`;
+  $('#dResStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  const unlockedNew=L.n>prevBest&&L.n<IMPL_MAX, mastered=L.n===IMPL_MAX&&prevBest<IMPL_MAX;
+  let msg;
+  if(mastered)msg='🏆 ¡ERES EL REY DE LA ISLA! Has superado todos los niveles disponibles.';
+  else if(unlockedNew)msg='🔓 ¡NIVEL '+(L.n+1)+' DESBLOQUEADO!';
+  else if(stars===3)msg='¡PERFECTO! Ni un fallo. 🦖';
+  else msg='¡Bien cazado! Prueba a conseguir 3 estrellas.';
+  $('#dResMsg').textContent=msg;
+  $('#dNext').style.display=(L.n<IMPL_MAX)?'':'none';
+  show('#scResult');   // dispara gameCleanup()
+}
+
+/* =========================================================================
+   ARRANQUE / LIMPIEZA DEL NIVEL
+   ========================================================================= */
+function startLevel(level){
+  gameCleanup();
+  curLevel=level;
+  dg={level,need:level.need,hunted:0,questions:0,correct:0,errors:0,
+      phase:'answer',locked:false,canFire:false,typed:'',prevKey:null,prevIsSum:null,
+      q:null,preys:[],cx:0,cy:0,anim:null,resolveTO:null,startTime:Date.now()};
+  keys={left:false,right:false,up:false,down:false};
+  $('#preys').innerHTML='';$('#cross').innerHTML=CROSS_SVG;$('#cross').classList.remove('on','hot');
+  $('#chomp').style.opacity='0';$('#nom').style.opacity='0';$('#sceneMsg').textContent='';
+  $('#trex').textContent=PLAYER_ICON;$('#pal').textContent=PAL_ICON;palHush();
+  buildKeypad();updateHud();
+
+  keyHandler=function(e){
+    if(!dg)return;
+    if(dg.phase==='answer'){
+      if(e.key>='0'&&e.key<='9')keyPress(e.key);
+      else if(e.key==='Backspace')keyPress('del');
+      else if(e.key==='Enter'){e.preventDefault();keyPress('ok');}
+      return;
+    }
+    if(dg.phase==='aim'){
+      const k=e.key.toLowerCase();
+      if(k==='arrowleft'||k==='a'){keys.left=true;e.preventDefault();}
+      else if(k==='arrowright'||k==='d'){keys.right=true;e.preventDefault();}
+      else if(k==='arrowup'||k==='w'){keys.up=true;e.preventDefault();}
+      else if(k==='arrowdown'||k==='s'){keys.down=true;e.preventDefault();}
+      else if(k===' '||k==='spacebar'||k==='enter'){e.preventDefault();if(!e.repeat)fire();}
+    }
+  };
+  keyUpHandler=function(e){
+    if(!dg||dg.phase!=='aim')return;
+    const k=e.key.toLowerCase();
+    if(k==='arrowleft'||k==='a')keys.left=false;
+    else if(k==='arrowright'||k==='d')keys.right=false;
+    else if(k==='arrowup'||k==='w')keys.up=false;
+    else if(k==='arrowdown'||k==='s')keys.down=false;
+  };
+  addEventListener('keydown',keyHandler);addEventListener('keyup',keyUpHandler);
+
+  show('#scGame');
+  maintainHerd();
+  nextQuestion();
+  dg.anim=requestAnimationFrame(loop);
+}
+function gameCleanup(){
+  if(dg){if(dg.anim)cancelAnimationFrame(dg.anim);clearTimeout(dg.resolveTO);}
+  if(keyHandler)removeEventListener('keydown',keyHandler);
+  if(keyUpHandler)removeEventListener('keyup',keyUpHandler);
+  keyHandler=null;keyUpHandler=null;dg=null;
+}
+
+/* =========================================================================
+   PROGRESO
+   ========================================================================= */
+function showProgress(){
+  const p=loadProg();let totalStars=0,done=0,html='';
+  for(let i=1;i<=IMPL_MAX;i++){const r=p.levels?.[i];const st=r?r.bestStars:0;const ps=r&&r.passed;
+    if(st>0)totalStars+=st;if(ps)done++;
+    html+=`<div class="pcard ${r?'':'empty'}"><div class="pt">${i}</div>
+      <div class="pl">${DINO_LEVELS[i-1].name}</div>
+      <div class="ps">${st>0?'★'.repeat(st):'· · ·'}</div></div>`;}
+  $('#progGrid').innerHTML=html;
+  $('#progOverall').innerHTML=`${(currentName()||'').toUpperCase()} · ⭐ ${totalStars} · ${done}/${IMPL_MAX} NIVELES`;
+  $('#resetRow').innerHTML=`<button class="btn ghost" id="resetBtn">🗑 BORRAR PROGRESO</button>
+    <span id="resetConfirm" style="display:none"> ¿Seguro?
+      <button class="btn ghost" id="resetYes" style="color:var(--red);border-color:var(--red)">SÍ</button>
+      <button class="btn ghost" id="resetNo">NO</button></span>`;
+  $('#resetBtn').onclick=()=>{$('#resetBtn').style.display='none';$('#resetConfirm').style.display='inline';};
+  $('#resetYes')&&($('#resetYes').onclick=()=>{saveProg({levels:{}});cloudPush();buildLevelGrid();showProgress();});
+  $('#resetNo')&&($('#resetNo').onclick=()=>showProgress());
+  show('#scProg');
+}
+$('#progBack').onclick=()=>show('#scMenu');
+
+/* =========================================================================
+   CABLEADO (una sola vez): resultado + controles táctiles de apuntado
+   ========================================================================= */
+function wire(){
+  if(wired)return;wired=true;
+  $('#dRetry').onclick=()=>startLevel(curLevel);
+  $('#dNext').onclick=()=>{const idx=DINO_LEVELS.indexOf(curLevel);if(idx>=0&&idx<IMPL_MAX-1)startLevel(DINO_LEVELS[idx+1]);};
+  $('#dMenu').onclick=()=>show('#scMenu');
+  const hold=(id,dir)=>{const b=$(id);
+    const on=e=>{e.preventDefault();keys[dir]=true;};
+    const off=()=>{keys[dir]=false;};
+    b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);
+    b.addEventListener('pointerleave',off);b.addEventListener('pointercancel',off);};
+  hold('#dUp','up');hold('#dDown','down');hold('#dLeft','left');hold('#dRight','right');
+  $('#dFire').addEventListener('click',e=>{e.preventDefault();fire();});
+}
+
+/* Init */
+initName();
+wire();
+</script>
+</body>
+</html>
