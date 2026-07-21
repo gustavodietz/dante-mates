@@ -748,6 +748,7 @@ const DSTATE={answer:['RESUELVE','var(--sky)'],aim:['¡APUNTA Y CAZA!','var(--am
   correct:['¡BIEN!','var(--green)'],wrong:['CASI…','#ff9d3d'],
   hit:['¡ÑAM! CAZADO','var(--green)'],miss:['SE ESCAPÓ','#ff9d3d'],
   road:['¡CORRE! COGE LA 🍖','var(--amber)'],grab:['¡ÑAM! 🍖','var(--green)'],nograb:['¡SE FUE LA 🍖!','#ff9d3d'],
+  kill:['¡CAZA AL TRICERATOPS! 🦕','var(--red)'],
   win:['¡FESTÍN!','var(--green)']};
 function setState(s){const el=$('#dState'),d=DSTATE[s]||DSTATE.answer;el.textContent=d[0];el.style.color=d[1];}
 function palSay(html){const b=$('#palBubble');b.innerHTML=html;b.style.display='block';}
@@ -930,28 +931,50 @@ function roadCxAt(p,W){ return W/2 + dg.curve*Math.pow(1-p,2)*W*0.42; } // centr
 
 function startRoad(){
   dg.phase='road';
-  dg.meat={lane:(Math.random()*1.4-0.7), p:0.02, active:true, resolved:false};
+  const isFinal=(dg.hunted===dg.need-1);   // este acierto lleva a la presa: se caza al TRICERATOPS
+  dg.meat={lane:(Math.random()*1.4-0.7), p:0.02, active:true, resolved:false, isFinal};
   dg.curveTarget=(Math.random()*2-1)*(dg.level.curvy||0.6);       // nueva curva para este tramo
-  palHush(); sndLock(); setState('road'); $('#sceneMsg').textContent='¡CORRE Y COGE LA CARNE! 🍖';
+  palHush(); sndLock(); setState(isFinal?'kill':'road');
+  $('#sceneMsg').textContent=isFinal?'¡DALE CAZA AL TRICERATOPS! 🦕':'¡CORRE Y COGE LA CARNE! 🍖';
   $('#answerArea').style.display='none';$('#helpWrap').style.display='none';
   $('#aimArea').style.display='none';$('#driveArea').style.display='flex';
   try{$('#dSteerR').focus();}catch(e){}
+}
+/* Salpicadura de sangre (partículas en el canvas del camino) */
+function spawnBlood(x,y,n){
+  dg.blood=dg.blood||[];
+  for(let i=0;i<(n||16);i++){
+    const a=Math.random()*Math.PI*2, sp=1.2+Math.random()*4.5;
+    dg.blood.push({x,y,vx:Math.cos(a)*sp, vy:Math.sin(a)*sp-2.2, life:1, size:2+Math.random()*4.5});
+  }
 }
 function resolveCatch(){
   if(!dg||dg.meat.resolved)return;
   dg.meat.resolved=true; dg.meat.active=false; Object.keys(keys).forEach(k=>keys[k]=false);
   const caught=Math.abs(dg.playerLane-dg.meat.lane)<=(dg.level.steerTol||0.4);
+  const isFinal=dg.meat.isFinal;
   dg.phase='roadwait';
+  // posición del mordisco (donde se resolvió, cerca del T-Rex)
+  const W=dg.roadW||300,H=dg.roadH||220,horizon=H*0.30,mp=0.92;
+  const bx=roadCxAt(mp,W)+dg.meat.lane*roadHalfAt(mp,W), by=horizon+mp*(H-horizon);
   if(caught){
     dg.hunted++; dg.meatGot=(dg.meatGot||0)+1;
-    sndRoar();sndChomp(); setState('grab'); flash('ok'); $('#pal').textContent='🥳';
-    $('#sceneMsg').textContent=(dg.hunted>=dg.need)?'¡LLEGAS A LA PRESA! 🦕':('¡CARNE! FALTAN '+(dg.need-dg.hunted));
-    dg.resolveTO=setTimeout(()=>{ if(!dg)return; $('#pal').textContent=PAL_ICON;
-      if(dg.hunted>=dg.need)endLevel(true); else nextQuestion(); },900);
+    if(isFinal){
+      // ¡caza al triceratops! mordisco grande + sangre
+      dg.finishing=true; sndRoar(); sndChomp(); setTimeout(sndChomp,120);
+      spawnBlood(bx,by,26); chompAt(bx,by); nomAt(bx,by);
+      setState('kill'); flash('ok'); $('#pal').textContent='🥳';
+      $('#sceneMsg').textContent='¡CAZASTE AL TRICERATOPS! 🩸';
+      dg.resolveTO=setTimeout(()=>{ if(dg)endLevel(true); },1300);
+    }else{
+      sndRoar();sndChomp(); spawnBlood(bx,by,10); setState('grab'); flash('ok'); $('#pal').textContent='🥳';
+      $('#sceneMsg').textContent='¡CARNE! FALTAN '+(dg.need-dg.hunted);
+      dg.resolveTO=setTimeout(()=>{ if(!dg)return; $('#pal').textContent=PAL_ICON; nextQuestion(); },900);
+    }
   }else{
     dg.meatMiss=(dg.meatMiss||0)+1;
     sndMiss(); setState('nograb'); flash('bad'); $('#pal').textContent='😵';
-    $('#sceneMsg').textContent='¡SE FUE LA CARNE! No avanzas · otra operación';
+    $('#sceneMsg').textContent=isFinal?'¡SE ESCAPÓ EL TRICERATOPS! Otra operación':'¡SE FUE LA CARNE! No avanzas · otra operación';
     dg.resolveTO=setTimeout(()=>{ if(!dg)return; $('#pal').textContent=PAL_ICON; nextQuestion(); },1000);
   }
 }
@@ -986,17 +1009,31 @@ function roadFrame(){
     ctx.fillRect(cx-half,y,edge,2); ctx.fillRect(cx+half-edge,y,edge,2);       // bordes
   }
   ctx.textAlign='center';ctx.textBaseline='middle';
-  // presa al final del camino (crece según avanzas)
-  const tp=0.03+prog*0.14, ty=horizon+tp*(H-horizon), tsize=14+prog*48;
-  ctx.font=tsize+'px serif'; ctx.fillText(PREY_ICON, roadCxAt(tp,W), ty);
-  // carne acercándose
+  // presa esperando al final del camino (crece según avanzas). En el tramo final
+  // no se dibuja aquí porque baja hacia el jugador como objeto a cazar.
+  const finalRun=dg.meat.active&&dg.meat.isFinal;
+  if(!finalRun){
+    const tp=0.03+prog*0.14, ty=horizon+tp*(H-horizon), tsize=14+prog*48;
+    ctx.font=tsize+'px serif'; ctx.fillText(PREY_ICON, roadCxAt(tp,W), ty);
+  }
+  // objeto acercándose: carne 🍖 (normal) o el triceratops 🦕 (tramo final, más grande)
   if(dg.meat.active){
     const mp=dg.meat.p, my=horizon+mp*(H-horizon), mx=roadCxAt(mp,W)+dg.meat.lane*roadHalfAt(mp,W);
-    ctx.font=(11+mp*30)+'px serif'; ctx.fillText(MEAT_ICON, mx, my);
+    if(dg.meat.isFinal){ ctx.font=(16+mp*48)+'px serif'; ctx.fillText(PREY_ICON, mx, my); }
+    else{ ctx.font=(11+mp*30)+'px serif'; ctx.fillText(MEAT_ICON, mx, my); }
   }
   // T-Rex del jugador (abajo)
   const psize=Math.min(H*0.26,60), pcx=roadCxAt(1,W)+dg.playerLane*roadHalfAt(1,W);
   ctx.font=psize+'px serif'; ctx.fillText(PLAYER_ICON, pcx, H-psize*0.55);
+  // sangre (partículas)
+  if(dg.blood&&dg.blood.length){
+    for(const b of dg.blood){ b.x+=b.vx; b.y+=b.vy; b.vy+=0.28; b.life-=0.02; }
+    dg.blood=dg.blood.filter(b=>b.life>0);
+    for(const b of dg.blood){ ctx.globalAlpha=Math.max(0,b.life);
+      ctx.fillStyle=(b.life>0.5)?'#e01019':'#8a0b12';
+      ctx.beginPath(); ctx.arc(b.x,b.y,b.size*(0.5+b.life*0.7),0,6.29); ctx.fill(); }
+    ctx.globalAlpha=1;
+  }
 }
 
 /* =========================================================================
@@ -1051,7 +1088,7 @@ function startLevel(level){
       q:null,preys:[],cx:0,cy:0,anim:null,resolveTO:null,startTime:Date.now(),
       /* estado del modo camino */
       travel:0,curve:0,curveTarget:0,playerLane:0,
-      meat:{active:false,resolved:true,p:0,lane:0},meatGot:0,meatMiss:0,roadCtx:null};
+      meat:{active:false,resolved:true,p:0,lane:0},meatGot:0,meatMiss:0,roadCtx:null,blood:[],finishing:false};
   keys={left:false,right:false,up:false,down:false};
   $('#preys').innerHTML='';$('#cross').innerHTML=CROSS_SVG;$('#cross').classList.remove('on','hot');
   $('#chomp').style.opacity='0';$('#nom').style.opacity='0';$('#sceneMsg').textContent='';
