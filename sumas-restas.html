@@ -184,6 +184,15 @@
   @keyframes firePulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);box-shadow:0 4px 0 #7a4600,0 0 22px var(--amber);}}
   .aimhint{font-family:var(--arcade);font-size:clamp(7px,1.9vw,9px);color:var(--sky);text-align:center;opacity:.85;}
 
+  /* ===== MODO CAMINO (niveles 6-10) ===== */
+  #road{position:absolute;inset:0;z-index:2;display:none;}
+  #driveArea{display:none;max-width:340px;margin:0 auto;flex-direction:column;align-items:center;gap:8px;}
+  .drivepad{display:flex;gap:18px;justify-content:center;}
+  .drivebtn{width:96px;height:56px;border:2px solid var(--panel-b);background:rgba(14,30,16,.85);color:var(--amber);
+    border-radius:14px;font-size:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.08s;
+    -webkit-user-select:none;user-select:none;touch-action:none;box-shadow:0 4px 0 #123a0e;}
+  .drivebtn:active{transform:translateY(3px);box-shadow:0 1px 0 #123a0e;background:rgba(63,174,42,.4);}
+
   /* Compañero (placeholder dino) */
   #pal{position:absolute;right:8px;bottom:6px;width:clamp(46px,13vw,62px);z-index:4;pointer-events:none;
     text-align:center;font-size:clamp(30px,9vw,46px);line-height:1;filter:drop-shadow(0 3px 5px rgba(0,0,0,.5));
@@ -278,6 +287,7 @@
       <div class="isla">
         <div id="jungle" tabindex="-1" aria-label="La jungla">
           <div class="canopy" aria-hidden="true">🌴 🌿 🌴 🍃 🌴 🌿 🌴</div>
+          <canvas id="road" aria-hidden="true"></canvas>
           <div id="sceneMsg"></div>
           <div id="preys"></div>
           <div id="cross" aria-hidden="true"></div>
@@ -312,6 +322,13 @@
               <button class="dbtn down" id="dDown" aria-label="Mover abajo">▼</button>
             </div>
             <div class="aimhint">FLECHAS/WASD MUEVEN · ESPACIO O 🔥 CAZA</div>
+          </div>
+          <div id="driveArea">
+            <div class="drivepad">
+              <button class="drivebtn" id="dSteerL" aria-label="Conducir a la izquierda">◀</button>
+              <button class="drivebtn" id="dSteerR" aria-label="Conducir a la derecha">▶</button>
+            </div>
+            <div class="aimhint">◀ ▶ (o A/D) · CONDUCE Y COGE LA CARNE 🍖</div>
           </div>
         </div>
       </div>
@@ -396,6 +413,7 @@ const PLAYER_ICON='🦖';          // el jugador (T-Rex)
 const PREY_ICON='🦕';            // la presa (triceratops, placeholder)
 function preyHTML(size){ return `<span class="pemoji" style="font-size:${size}px">${PREY_ICON}</span>`; }
 const PAL_ICON='🦕';             // compañero que da pistas
+const MEAT_ICON='🍖';            // coleccionable del camino (niveles 6-10)
 const CROSS_SVG=`<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
   <circle cx="40" cy="40" r="30" fill="none" stroke="#ffb400" stroke-width="2.8" opacity=".95"/>
   <circle cx="40" cy="40" r="19" fill="none" stroke="#ffb400" stroke-width="1" opacity=".5"/>
@@ -415,7 +433,7 @@ const CROSS_SVG=`<svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
    - tol  : tolerancia de puntería (× radio de la presa; mayor = más fácil)
    - ops  : reglas del generador de operaciones (ver genOp)
    ========================================================================= */
-const IMPL_MAX=5;        // niveles jugables ahora mismo
+const IMPL_MAX=10;       // niveles jugables ahora mismo (1-5 caza · 6-10 camino)
 const TOTAL_LEVELS=20;   // se mostrarán como "PRONTO" los no implementados
 
 const DINO_LEVELS=[
@@ -443,11 +461,28 @@ const DINO_LEVELS=[
     ops:{ sumWeight:0.50,
       sum:{aMin:15,aMax:50, bMin:10,bMax:40, resMin:26, resMax:95}, // hasta ~50, con llevada
       sub:{mMin:20,mMax:52, sMin:10,sMax:46, resMin:1} } },         // hasta ~50, con préstamo
+
+  /* ---------- BLOQUE 2 · MODO CAMINO (runner: conducir al T-Rex y coger la carne) ----------
+     mode:'road' → segundo escenario. Sin ayuda de círculos. Operaciones más difíciles.
+     - need     : pasos (aciertos CON carre cogida) para llegar a la presa del final
+     - runSpeed : velocidad a la que la carne se acerca (mayor = menos tiempo para conducir)
+     - steerTol : margen de carril para coger la carne (0..1; mayor = más fácil)
+     - curvy    : cuánto se curva el camino
+     - ops.max  : tamaño máximo de números/resultado ; ops.chain : prob. de cadena de 3 números */
+  { n:6,  name:'SENDA',        mode:'road', need:13, runSpeed:0.0060, steerTol:0.44, curvy:0.5,
+      ops:{ max:70,  chain:0.00 } },
+  { n:7,  name:'CAÑÓN',        mode:'road', need:15, runSpeed:0.0068, steerTol:0.40, curvy:0.7,
+      ops:{ max:110, chain:0.18 } },
+  { n:8,  name:'SELVA',        mode:'road', need:16, runSpeed:0.0076, steerTol:0.37, curvy:0.9,
+      ops:{ max:160, chain:0.38 } },
+  { n:9,  name:'RÍO SALVAJE',  mode:'road', need:17, runSpeed:0.0086, steerTol:0.34, curvy:1.1,
+      ops:{ max:260, chain:0.62 } },
+  { n:10, name:'GUARIDA',      mode:'road', need:18, runSpeed:0.0098, steerTol:0.31, curvy:1.3,
+      ops:{ max:500, chain:0.85 } },
 ];
 
 /* Nombres/emoji de los bloques futuros (solo decorativos por ahora) */
-const FUTURE_LABELS={6:'🌋',7:'🌋',8:'🌋',9:'🌋',10:'🌋',11:'🐊',12:'🐊',13:'🐊',14:'🐊',15:'🐊',
-  16:'🦅',17:'🦅',18:'🦅',19:'🦅',20:'🏆'};
+const FUTURE_LABELS={11:'🐊',12:'🐊',13:'🐊',14:'🐊',15:'🐊',16:'🦅',17:'🦅',18:'🦅',19:'🦅',20:'🏆'};
 
 let state={};   // estado ligero global (reservado para el futuro)
 
@@ -633,6 +668,45 @@ function genOp(level,prevKey,prevIsSum){
   const x=rnd(1,5),y=rnd(1,4);return {op:'+',x,y,res:x+y,answer:x+y,isSum:true,key:x+'+'+y};
 }
 
+/* Generador DIFÍCIL (niveles 6-10, modo camino). Números grandes y, según nivel,
+   cadenas de 3 términos (ej. 45 + 20 - 13). Nunca hay negativos en ningún paso. */
+function genOpBig(level,prevKey){
+  const max=level.ops.max, chainProb=level.ops.chain||0;
+  for(let tries=0;tries<400;tries++){
+    const nTerms=(Math.random()<chainProb)?3:2;
+    let running=rnd(Math.max(2,Math.round(max*0.2)),max);
+    const terms=[running],ops=[];let okBuild=true;
+    for(let t=1;t<nTerms;t++){
+      const canPlus=running<max, canMinus=running>1; let op;
+      if(canPlus&&canMinus)op=(Math.random()<0.5)?'+':'-';
+      else if(canPlus)op='+'; else if(canMinus)op='-'; else {okBuild=false;break;}
+      let val;
+      if(op==='+'){val=rnd(1,max-running);running+=val;}
+      else{val=rnd(1,running);running-=val;}      // running-val ≥ 0 siempre
+      terms.push(val);ops.push(op);
+    }
+    if(!okBuild)continue;
+    const answer=running;
+    if(answer<1)continue;                          // evita "= 0" (más motivador)
+    const key=terms[0]+ops.map((o,i)=>o+terms[i+1]).join('');
+    if(key===prevKey)continue;                     // no repetir idéntica seguida
+    return {terms,ops,answer,key};
+  }
+  const a=rnd(10,Math.max(11,max)),b=rnd(1,a-1);
+  return {terms:[a,b],ops:['-'],answer:a-b,key:a+'-'+b};
+}
+
+/* Pinta la operación (sirve para 2 términos del modo caza y cadenas del modo camino) */
+function opTokens(q){
+  if(q.terms){const a=[String(q.terms[0])];for(let i=0;i<q.ops.length;i++){a.push(q.ops[i],String(q.terms[i+1]));}return a;}
+  return [String(q.x),q.op,String(q.y)];
+}
+function opInner(q){
+  return opTokens(q).map(t=>(t==='+'||t==='-')?`<span class="op">${t}</span>`:`<span class="num">${t}</span>`).join('')
+    +`<span class="eq">=</span><span class="q">?</span>`;
+}
+function opText(q){ return opTokens(q).join(' ')+' = '+q.answer; }
+
 /* =========================================================================
    AYUDA VISUAL CON CÍRCULOS (bloques de diez + unidades)
    - suma a+b: a círculos color A + b color B, se cuentan todos
@@ -673,6 +747,7 @@ const jungle=$('#jungle');
 const DSTATE={answer:['RESUELVE','var(--sky)'],aim:['¡APUNTA Y CAZA!','var(--amber)'],
   correct:['¡BIEN!','var(--green)'],wrong:['CASI…','#ff9d3d'],
   hit:['¡ÑAM! CAZADO','var(--green)'],miss:['SE ESCAPÓ','#ff9d3d'],
+  road:['¡CORRE! COGE LA 🍖','var(--amber)'],grab:['¡ÑAM! 🍖','var(--green)'],nograb:['¡SE FUE LA 🍖!','#ff9d3d'],
   win:['¡FESTÍN!','var(--green)']};
 function setState(s){const el=$('#dState'),d=DSTATE[s]||DSTATE.answer;el.textContent=d[0];el.style.color=d[1];}
 function palSay(html){const b=$('#palBubble');b.innerHTML=html;b.style.display='block';}
@@ -681,7 +756,7 @@ const PAL_ENDINGS=['¡Tú puedes!','¡La próxima la cazas!','¡A por otra!','¡
 
 function updateHud(){
   $('#dLevelPill').textContent='NIVEL '+dg.level.n;
-  $('#dPreyPill').textContent='🦕 '+dg.hunted+'/'+dg.need;
+  $('#dPreyPill').textContent=(dg.mode==='road'?'🏁 ':'🦕 ')+dg.hunted+'/'+dg.need;
   $('#dOkPill').textContent='✔ '+dg.correct;
   $('#dErrPill').textContent='✖ '+dg.errors;
   $('#dProgFill').style.width=Math.min(100,Math.round(dg.hunted/dg.need*100))+'%';
@@ -731,6 +806,7 @@ function maintainHerd(){
 /* Bucle de animación (presas vagando + mirilla en fase de apuntar) */
 function loop(){
   if(!dg)return;
+  if(dg.mode==='road'){ roadFrame(); dg.anim=requestAnimationFrame(loop); return; }
   const W=jungle.clientWidth,H=jungle.clientHeight,sp=dg.level.speed;
   const leftB=10,rightB=W-10,topB=28,botB=H-44;
   dg.preys.forEach(e=>{
@@ -761,15 +837,17 @@ function loop(){
    ========================================================================= */
 function nextQuestion(){
   if(!dg)return;
-  const q=genOp(dg.level,dg.prevKey,dg.prevIsSum);
-  dg.q=q;dg.prevKey=q.key;dg.prevIsSum=q.isSum;
+  const road=dg.mode==='road';
+  const q=road?genOpBig(dg.level,dg.prevKey):genOp(dg.level,dg.prevKey,dg.prevIsSum);
+  dg.q=q;dg.prevKey=q.key;dg.prevIsSum=(q.isSum!==undefined?q.isSum:dg.prevIsSum);
   dg.phase='answer';dg.locked=false;dg.typed='';
-  $('#aimArea').style.display='none';$('#answerArea').style.display='block';
-  $('#helpWrap').style.display='block';
+  $('#aimArea').style.display='none';$('#driveArea').style.display='none';$('#answerArea').style.display='block';
+  $('#helpWrap').style.display=road?'none':'block';
   $('#cross').classList.remove('on','hot');
   $('#typed').className='';palHush();$('#sceneMsg').textContent='';
-  $('#operation').innerHTML=`<span class="num">${q.x}</span><span class="op">${q.op}</span><span class="num">${q.y}</span><span class="eq">=</span><span class="q">?</span>`;
-  renderHelp(q);renderTyped();updateHud();setState('answer');
+  $('#operation').innerHTML=opInner(q);
+  if(!road)renderHelp(q);
+  renderTyped();updateHud();setState('answer');
   try{$('#typed').focus();}catch(e){}
 }
 function answer(val){
@@ -779,14 +857,14 @@ function answer(val){
     tb.className='ok';tb.textContent=val;
     dg.correct++;sndCorrect();flash('ok');setState('correct');updateHud();
     $('#pal').textContent='😃';
-    startAim();
+    if(dg.mode==='road')startRoad(); else startAim();
   }else{
     tb.className='bad';tb.textContent=dg.typed||val;
     dg.errors++;sndWrong();flash('bad');setState('wrong');updateHud();
     $('#pal').textContent='😮';
     // el compañero enseña la solución (sin castigo, aprendizaje)
-    palSay(`<b>${q.x} ${q.op} ${q.y} = ${q.res}</b><br>${PAL_ENDINGS[rnd(0,PAL_ENDINGS.length-1)]}`);
-    setTimeout(()=>{if(dg)tb.textContent=q.res+' ✔';},500);
+    palSay(`<b>${opText(q)}</b><br>${PAL_ENDINGS[rnd(0,PAL_ENDINGS.length-1)]}`);
+    setTimeout(()=>{if(dg)tb.textContent=q.answer+' ✔';},500);
     dg.resolveTO=setTimeout(()=>{$('#pal').textContent=PAL_ICON;nextQuestion();},1900);
   }
 }
@@ -843,6 +921,85 @@ function nomAt(x,y){const n=$('#nom');n.textContent='¡ÑAM!';n.style.left=x+'px
   setTimeout(()=>n.style.opacity='0',560);}
 
 /* =========================================================================
+   FASE 2 (modo camino) · CONDUCIR EL T-REX Y COGER LA CARNE
+   Camino pseudo-3D con curvas; el T-Rex corre y hay que ponerse debajo de la
+   carne. Acertar la operación Y coger la carne = un paso hacia la presa.
+   ========================================================================= */
+function roadHalfAt(p,W){ return (W*0.055)+(W*0.42)*p; }          // ancho del camino a esa profundidad
+function roadCxAt(p,W){ return W/2 + dg.curve*Math.pow(1-p,2)*W*0.42; } // centro (la curva desvía el fondo)
+
+function startRoad(){
+  dg.phase='road';
+  dg.meat={lane:(Math.random()*1.4-0.7), p:0.02, active:true, resolved:false};
+  dg.curveTarget=(Math.random()*2-1)*(dg.level.curvy||0.6);       // nueva curva para este tramo
+  palHush(); sndLock(); setState('road'); $('#sceneMsg').textContent='¡CORRE Y COGE LA CARNE! 🍖';
+  $('#answerArea').style.display='none';$('#helpWrap').style.display='none';
+  $('#aimArea').style.display='none';$('#driveArea').style.display='flex';
+  try{$('#dSteerR').focus();}catch(e){}
+}
+function resolveCatch(){
+  if(!dg||dg.meat.resolved)return;
+  dg.meat.resolved=true; dg.meat.active=false; Object.keys(keys).forEach(k=>keys[k]=false);
+  const caught=Math.abs(dg.playerLane-dg.meat.lane)<=(dg.level.steerTol||0.4);
+  dg.phase='roadwait';
+  if(caught){
+    dg.hunted++; dg.meatGot=(dg.meatGot||0)+1;
+    sndRoar();sndChomp(); setState('grab'); flash('ok'); $('#pal').textContent='🥳';
+    $('#sceneMsg').textContent=(dg.hunted>=dg.need)?'¡LLEGAS A LA PRESA! 🦕':('¡CARNE! FALTAN '+(dg.need-dg.hunted));
+    dg.resolveTO=setTimeout(()=>{ if(!dg)return; $('#pal').textContent=PAL_ICON;
+      if(dg.hunted>=dg.need)endLevel(true); else nextQuestion(); },900);
+  }else{
+    dg.meatMiss=(dg.meatMiss||0)+1;
+    sndMiss(); setState('nograb'); flash('bad'); $('#pal').textContent='😵';
+    $('#sceneMsg').textContent='¡SE FUE LA CARNE! No avanzas · otra operación';
+    dg.resolveTO=setTimeout(()=>{ if(!dg)return; $('#pal').textContent=PAL_ICON; nextQuestion(); },1000);
+  }
+}
+function roadFrame(){
+  const cv=$('#road'); if(!dg.roadCtx)dg.roadCtx=cv.getContext('2d');
+  const ctx=dg.roadCtx, cw=jungle.clientWidth||320, ch=jungle.clientHeight||220;
+  if(cv.width!==cw||cv.height!==ch){cv.width=cw;cv.height=ch;}
+  const W=cv.width,H=ch;
+  // --- actualizar (solo mientras corre) ---
+  if(dg.phase==='road'){
+    dg.travel+=(dg.level.runSpeed||0.006)*22;
+    const st=0.024;
+    if(keys.left)dg.playerLane-=st; if(keys.right)dg.playerLane+=st;
+    dg.playerLane=Math.max(-1,Math.min(1,dg.playerLane));
+    dg.curve+=(dg.curveTarget-dg.curve)*0.02;
+    if(dg.meat.active){ dg.meat.p+=(dg.level.runSpeed||0.006);
+      if(dg.meat.p>=0.92&&!dg.meat.resolved)resolveCatch(); }
+  }
+  // --- dibujar ---
+  const horizon=H*0.30, prog=dg.hunted/dg.need;
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#20406a');sky.addColorStop(.30,'#37663a');sky.addColorStop(1,'#0c1f0c');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+  for(let y=Math.floor(horizon);y<H;y+=2){
+    const p=(y-horizon)/(H-horizon);
+    const worldZ=1/(0.12+p*0.9), half=roadHalfAt(p,W), cx=roadCxAt(p,W);
+    const band=(Math.floor(worldZ*1.6-dg.travel)%2+2)%2;
+    ctx.fillStyle=band?'#245a24':'#2c6a2c'; ctx.fillRect(0,y,W,2);            // hierba
+    ctx.fillStyle=band?'#6b5336':'#5c472e'; ctx.fillRect(cx-half,y,half*2,2); // tierra
+    const edge=Math.max(2,half*0.09);
+    ctx.fillStyle=band?'#d8b066':'#8a6a3a';
+    ctx.fillRect(cx-half,y,edge,2); ctx.fillRect(cx+half-edge,y,edge,2);       // bordes
+  }
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  // presa al final del camino (crece según avanzas)
+  const tp=0.03+prog*0.14, ty=horizon+tp*(H-horizon), tsize=14+prog*48;
+  ctx.font=tsize+'px serif'; ctx.fillText(PREY_ICON, roadCxAt(tp,W), ty);
+  // carne acercándose
+  if(dg.meat.active){
+    const mp=dg.meat.p, my=horizon+mp*(H-horizon), mx=roadCxAt(mp,W)+dg.meat.lane*roadHalfAt(mp,W);
+    ctx.font=(11+mp*30)+'px serif'; ctx.fillText(MEAT_ICON, mx, my);
+  }
+  // T-Rex del jugador (abajo)
+  const psize=Math.min(H*0.26,60), pcx=roadCxAt(1,W)+dg.playerLane*roadHalfAt(1,W);
+  ctx.font=psize+'px serif'; ctx.fillText(PLAYER_ICON, pcx, H-psize*0.55);
+}
+
+/* =========================================================================
    FIN DE NIVEL (siempre se completa cazando la manada; sin "perder")
    ========================================================================= */
 function endLevel(win){
@@ -858,11 +1015,18 @@ function endLevel(win){
   const secs=Math.round(timeMs/1000);
   $('#dResIcon').textContent='🦖🏆';
   $('#dResTitle').textContent='¡NIVEL SUPERADO!';$('#dResTitle').style.color='var(--green)';
-  $('#dResStats').innerHTML=`Nivel <b>${L.n}</b> · ${L.name}<br>
-    🦕 Cazados: <b style="color:var(--green)">${hunted}</b> / ${L.need}<br>
-    Operaciones: <b>${questions}</b> · ✔ <b style="color:var(--green)">${correct}</b> · ✖ <b style="color:#ff9d3d">${errors}</b><br>
-    Aciertos: <b>${acc}%</b><br>
-    ⏱ Tiempo: <b>${secs}s</b>`;
+  $('#dResStats').innerHTML=(dg.mode==='road')
+    ?`Nivel <b>${L.n}</b> · ${L.name}<br>
+      🏁 ¡Llegaste a la presa! (${L.need} pasos)<br>
+      🍖 Carne cogida: <b style="color:var(--green)">${dg.meatGot||0}</b> · fallada: <b style="color:#ff9d3d">${dg.meatMiss||0}</b><br>
+      Operaciones: <b>${questions}</b> · ✔ <b style="color:var(--green)">${correct}</b> · ✖ <b style="color:#ff9d3d">${errors}</b><br>
+      Aciertos: <b>${acc}%</b><br>
+      ⏱ Tiempo: <b>${secs}s</b>`
+    :`Nivel <b>${L.n}</b> · ${L.name}<br>
+      🦕 Cazados: <b style="color:var(--green)">${hunted}</b> / ${L.need}<br>
+      Operaciones: <b>${questions}</b> · ✔ <b style="color:var(--green)">${correct}</b> · ✖ <b style="color:#ff9d3d">${errors}</b><br>
+      Aciertos: <b>${acc}%</b><br>
+      ⏱ Tiempo: <b>${secs}s</b>`;
   $('#dResStars').textContent='⭐'.repeat(stars)+'☆'.repeat(3-stars);
   const unlockedNew=L.n>prevBest&&L.n<IMPL_MAX, mastered=L.n===IMPL_MAX&&prevBest<IMPL_MAX;
   let msg;
@@ -881,13 +1045,23 @@ function endLevel(win){
 function startLevel(level){
   gameCleanup();
   curLevel=level;
-  dg={level,need:level.need,hunted:0,questions:0,correct:0,errors:0,
+  const road=(level.mode||'hunt')==='road';
+  dg={level,mode:level.mode||'hunt',need:level.need,hunted:0,questions:0,correct:0,errors:0,
       phase:'answer',locked:false,canFire:false,typed:'',prevKey:null,prevIsSum:null,
-      q:null,preys:[],cx:0,cy:0,anim:null,resolveTO:null,startTime:Date.now()};
+      q:null,preys:[],cx:0,cy:0,anim:null,resolveTO:null,startTime:Date.now(),
+      /* estado del modo camino */
+      travel:0,curve:0,curveTarget:0,playerLane:0,
+      meat:{active:false,resolved:true,p:0,lane:0},meatGot:0,meatMiss:0,roadCtx:null};
   keys={left:false,right:false,up:false,down:false};
   $('#preys').innerHTML='';$('#cross').innerHTML=CROSS_SVG;$('#cross').classList.remove('on','hot');
   $('#chomp').style.opacity='0';$('#nom').style.opacity='0';$('#sceneMsg').textContent='';
   $('#trex').textContent=PLAYER_ICON;$('#pal').textContent=PAL_ICON;palHush();
+  // escena según el modo
+  $('#road').style.display=road?'block':'none';
+  $('#preys').style.display=road?'none':'';
+  $('#cross').style.display=road?'none':'';
+  $('#trex').style.display=road?'none':'';
+  $('#driveArea').style.display='none';$('#aimArea').style.display='none';
   buildKeypad();updateHud();
 
   keyHandler=function(e){
@@ -898,17 +1072,17 @@ function startLevel(level){
       else if(e.key==='Enter'){e.preventDefault();keyPress('ok');}
       return;
     }
-    if(dg.phase==='aim'){
+    if(dg.phase==='aim'||dg.phase==='road'){
       const k=e.key.toLowerCase();
       if(k==='arrowleft'||k==='a'){keys.left=true;e.preventDefault();}
       else if(k==='arrowright'||k==='d'){keys.right=true;e.preventDefault();}
-      else if(k==='arrowup'||k==='w'){keys.up=true;e.preventDefault();}
-      else if(k==='arrowdown'||k==='s'){keys.down=true;e.preventDefault();}
-      else if(k===' '||k==='spacebar'||k==='enter'){e.preventDefault();if(!e.repeat)fire();}
+      else if(dg.phase==='aim'&&(k==='arrowup'||k==='w')){keys.up=true;e.preventDefault();}
+      else if(dg.phase==='aim'&&(k==='arrowdown'||k==='s')){keys.down=true;e.preventDefault();}
+      else if(dg.phase==='aim'&&(k===' '||k==='spacebar'||k==='enter')){e.preventDefault();if(!e.repeat)fire();}
     }
   };
   keyUpHandler=function(e){
-    if(!dg||dg.phase!=='aim')return;
+    if(!dg||(dg.phase!=='aim'&&dg.phase!=='road'))return;
     const k=e.key.toLowerCase();
     if(k==='arrowleft'||k==='a')keys.left=false;
     else if(k==='arrowright'||k==='d')keys.right=false;
@@ -918,7 +1092,7 @@ function startLevel(level){
   addEventListener('keydown',keyHandler);addEventListener('keyup',keyUpHandler);
 
   show('#scGame');
-  maintainHerd();
+  if(!road)maintainHerd();
   nextQuestion();
   dg.anim=requestAnimationFrame(loop);
 }
@@ -967,6 +1141,8 @@ function wire(){
     b.addEventListener('pointerleave',off);b.addEventListener('pointercancel',off);};
   hold('#dUp','up');hold('#dDown','down');hold('#dLeft','left');hold('#dRight','right');
   $('#dFire').addEventListener('click',e=>{e.preventDefault();fire();});
+  // conducir (modo camino): ◀ ▶
+  hold('#dSteerL','left');hold('#dSteerR','right');
 }
 
 /* Init */
