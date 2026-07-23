@@ -383,8 +383,9 @@
 </div>
 
 <!-- ☁️ Firebase: sincroniza el progreso por nombre entre dispositivos.
-     Reutiliza el proyecto "dante-mates" pero escribe en OTRA rama (dino_profiles),
-     así no pisa el juego de multiplicaciones. -->
+     Guarda DENTRO de la rama permitida "profiles/" con prefijo "dino_" (p.ej.
+     profiles/dino_dante). Así usa las reglas que ya existen (evita "Permission
+     denied") y NO colisiona con el juego de multiplicaciones, que lee profiles/<nombre>. -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
@@ -397,7 +398,7 @@
     messagingSenderId: "696890882370",
     appId: "1:696890882370:web:beba6a7448e5d0aea9b0db"
   };
-  const keyOf = n => 'dino_profiles/' + String(n||'').toLowerCase().trim().replace(/[.#$\[\]\/\s]+/g,'_');
+  const keyOf = n => 'profiles/dino_' + String(n||'').toLowerCase().trim().replace(/[.#$\[\]\/\s]+/g,'_');
   try {
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
