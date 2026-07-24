@@ -434,7 +434,10 @@
   .shopcard.owned{border-color:var(--green);box-shadow:0 0 14px rgba(57,255,20,.3);}
   .shopcard.equipped{border-color:var(--gold);box-shadow:0 0 18px rgba(255,232,31,.5);}
   .shopcard.cant{opacity:.6;}
-  .shopcard .sico{font-size:40px;flex:0 0 auto;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));}
+  .shopcard .sico{width:56px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;}
+  .shopcard .sico svg{width:56px;height:56px;display:block;filter:drop-shadow(0 2px 5px rgba(0,0,0,.6));}
+  .hshiptag .tsvg{display:inline-flex;vertical-align:middle;margin-right:5px;}
+  .hshiptag .tsvg svg{width:16px;height:16px;display:block;}
   .shopcard .sbody{flex:1 1 auto;display:flex;flex-direction:column;gap:3px;}
   .shopcard .sname{font-family:var(--arcade);font-size:clamp(11px,3vw,15px);color:var(--gold);text-shadow:0 0 8px rgba(255,232,31,.4);}
   .shopcard .sprice{font-family:var(--arcade);font-size:clamp(9px,2.4vw,12px);color:var(--cyan);}
@@ -1198,14 +1201,63 @@ const HUNTER_LEVELS=[
 ];
 const HMAX=HUNTER_LEVELS.length;   // niveles disponibles (10)
 
-/* 💰 Economía + 🚀 tienda de naves (placeholders fáciles de sustituir por imágenes).
-   Cambia icon/accent/sky por tus propias naves cuando quieras. */
+/* 💰 Economía + 🚀 tienda de naves.
+   Gráficos ARCADE (SVG dibujado a mano, siluetas tipo saga; fan art para uso personal
+   de Dante). Fáciles de sustituir: cambia el `svg` de cada nave por el tuyo. */
+const SHIP_SVG={
+  // Nave del mandaloriano (cañonera) — vista lateral
+  razor:`<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="6,18 15,22 15,42 6,46" fill="#7a828d" stroke="#3a4149" stroke-width="1.5"/>
+    <polygon points="11,20 15,22 15,42 11,44" fill="#5b6472"/>
+    <path d="M13,26 H46 q12,0 14,6 q-2,6 -14,6 H13 Z" fill="#cfd6df" stroke="#5b6472" stroke-width="2"/>
+    <rect x="21" y="30" width="20" height="4" fill="#aab3bd"/>
+    <path d="M50,28 q8,1 8,4 q0,3 -8,4 Z" fill="#12263f"/><circle cx="53" cy="32" r="2" fill="#7fe6ff"/>
+    <rect x="3" y="30" width="4" height="4" rx="2" fill="#ff8a3d"/></svg>`,
+  // Caza TIE — vista frontal
+  tie:`<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <rect x="15" y="30" width="34" height="4" fill="#2a2f38"/>
+    <polygon points="6,14 17,10 17,54 6,50" fill="#20242c" stroke="#5b6472" stroke-width="2"/>
+    <line x1="11" y1="13" x2="11" y2="51" stroke="#3a4149" stroke-width="1.5"/>
+    <polygon points="58,14 47,10 47,54 58,50" fill="#20242c" stroke="#5b6472" stroke-width="2"/>
+    <line x1="53" y1="13" x2="53" y2="51" stroke="#3a4149" stroke-width="1.5"/>
+    <circle cx="32" cy="32" r="11" fill="#2a2f38" stroke="#7a828d" stroke-width="2"/>
+    <circle cx="32" cy="32" r="4" fill="#ff2e4d"/></svg>`,
+  // Ala-X — vista cenital
+  xwing:`<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="30,26 6,16 8,22 30,32" fill="#d8dee6" stroke="#5b6472" stroke-width="1.5"/>
+    <polygon points="34,26 58,16 56,22 34,32" fill="#d8dee6" stroke="#5b6472" stroke-width="1.5"/>
+    <polygon points="30,38 6,48 8,42 30,32" fill="#c3cbd4" stroke="#5b6472" stroke-width="1.5"/>
+    <polygon points="34,38 58,48 56,42 34,32" fill="#c3cbd4" stroke="#5b6472" stroke-width="1.5"/>
+    <rect x="3" y="13" width="4" height="4" fill="#e5322f"/><rect x="57" y="13" width="4" height="4" fill="#e5322f"/>
+    <rect x="3" y="47" width="4" height="4" fill="#e5322f"/><rect x="57" y="47" width="4" height="4" fill="#e5322f"/>
+    <path d="M32,6 L36,28 L36,52 L28,52 L28,28 Z" fill="#eef2f6" stroke="#5b6472" stroke-width="1.5"/>
+    <polygon points="32,6 29,18 35,18" fill="#b7c0ca"/>
+    <rect x="28" y="41" width="8" height="3" fill="#e5322f"/>
+    <ellipse cx="32" cy="30" rx="3" ry="4.5" fill="#12263f"/><ellipse cx="32.6" cy="29" rx="1.3" ry="2" fill="#7fe6ff"/></svg>`,
+  // Caza N-1 de Naboo — vista cenital
+  nboo:`<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="20,52 26,40 30,40 28,56" fill="#c9ccd0" stroke="#5b6472" stroke-width="1.5"/>
+    <polygon points="44,52 38,40 34,40 36,56" fill="#c9ccd0" stroke="#5b6472" stroke-width="1.5"/>
+    <path d="M32,6 q11,14 8,36 q-8,6 -16,0 q-3,-22 8,-36 Z" fill="#f2c93a" stroke="#a5851f" stroke-width="2"/>
+    <path d="M32,6 q4,9 3,17 h-6 q-1,-8 3,-17 Z" fill="#eef2f6" stroke="#a5851f" stroke-width="1.2"/>
+    <ellipse cx="32" cy="31" rx="4" ry="6" fill="#12263f"/><ellipse cx="32.6" cy="29" rx="1.6" ry="2.4" fill="#7fe6ff"/></svg>`,
+  // Halcón Milenario — vista cenital
+  falcon:`<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="24,8 40,8 38,17 26,17" fill="#b7bec7" stroke="#5b6472" stroke-width="1.5"/>
+    <rect x="30" y="6" width="4" height="9" fill="#0b1738"/>
+    <ellipse cx="32" cy="37" rx="24" ry="20" fill="#cfd6df" stroke="#5b6472" stroke-width="2"/>
+    <circle cx="32" cy="37" r="7.5" fill="#aab3bd" stroke="#7a828d" stroke-width="1.5"/>
+    <line x1="32" y1="17" x2="32" y2="29" stroke="#8a94a3" stroke-width="1.5"/>
+    <line x1="32" y1="45" x2="32" y2="57" stroke="#8a94a3" stroke-width="1.5"/>
+    <circle cx="49" cy="47" r="4" fill="#20242c" stroke="#5b6472"/><circle cx="49" cy="47" r="1.6" fill="#7fe6ff"/>
+    <circle cx="22" cy="24" r="3.4" fill="#e8edf2" stroke="#5b6472"/></svg>`,
+};
 const HSHIPS=[
-  {id:'razor',  name:'RAZOR CREST',  price:0,    icon:'🚀', accent:'#9fb0c0', sky:'#0b1738'},
-  {id:'nboo',   name:'CAZA N-1',     price:150,  icon:'🛩️', accent:'#f2c93a', sky:'#12233f'},
-  {id:'xwing',  name:'ALA-X',        price:350,  icon:'✈️', accent:'#ff8a3d', sky:'#221033'},
-  {id:'falcon', name:'CARGUERO YT',  price:700,  icon:'🛸', accent:'#5fe0ff', sky:'#07202a'},
-  {id:'slaveI', name:'ESCLAVO I',    price:1200, icon:'🚀', accent:'#b06bff', sky:'#1a0b2e'},
+  {id:'razor',  name:'RAZOR CREST',      price:0,    svg:SHIP_SVG.razor,  accent:'#9fb0c0', sky:'#0b1738'},
+  {id:'tie',    name:'CAZA TIE',         price:150,  svg:SHIP_SVG.tie,    accent:'#8892a0', sky:'#101018'},
+  {id:'xwing',  name:'ALA-X',            price:350,  svg:SHIP_SVG.xwing,  accent:'#ff8a3d', sky:'#221033'},
+  {id:'nboo',   name:'CAZA N-1',         price:700,  svg:SHIP_SVG.nboo,   accent:'#f2c93a', sky:'#12233f'},
+  {id:'falcon', name:'HALCÓN MILENARIO', price:1200, svg:SHIP_SVG.falcon, accent:'#5fe0ff', sky:'#07202a'},
 ];
 const shipById=id=>HSHIPS.find(s=>s.id===id)||HSHIPS[0];
 /* Recompensa según dificultad de la multiplicación: fácil poco, difícil más. */
@@ -1351,7 +1403,7 @@ function applyShipSkin(){
     ck.style.boxShadow=`0 0 0 2px #05070d,0 0 30px ${s.accent}66,inset 0 0 40px rgba(0,0,0,.6)`;}
   const win=$('#hWindow');
   if(win)win.style.background=`radial-gradient(ellipse at 50% 34%, ${s.sky} 0%, #060a1c 55%, #02030c 100%)`;
-  const tag=$('#hShipTag'); if(tag)tag.innerHTML=`${s.icon} ${s.name}`;
+  const tag=$('#hShipTag'); if(tag)tag.innerHTML=`<span class="tsvg">${s.svg}</span>${s.name}`;
 }
 
 /* 🛒 Hangar: comprar / equipar naves */
@@ -1367,7 +1419,7 @@ function showHShop(){
     else if(can)  action=`<button class="btn shop-buy" data-id="${s.id}">💰 ${s.price}</button>`;
     else          action=`<span class="stag lock">💰 ${s.price}<br>FALTAN ${s.price-hWallet()}</span>`;
     html+=`<div class="shopcard ${isEq?'equipped':owned?'owned':(can?'':'cant')}">
-      <div class="sico">${s.icon}</div>
+      <div class="sico">${s.svg}</div>
       <div class="sbody"><span class="sname">${s.name}</span>
         <span class="sprice">${s.price===0?'NAVE INICIAL':('PRECIO 💰 '+s.price)}</span></div>
       <div class="sact">${action}</div></div>`;
