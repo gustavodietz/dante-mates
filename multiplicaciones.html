@@ -414,6 +414,36 @@
     .hquestion{font-size:22px;margin:1px 0 5px;}
     .hhearts .heart{font-size:12px;}
   }
+
+  /* ===== 💰 DINERO + TIENDA (Caza Estelar) ===== */
+  .hpill.cash{color:var(--gold);border-color:#7a5f00;text-shadow:0 0 6px rgba(255,232,31,.6);}
+  .hpill.time{color:var(--cyan);border-color:#0d4f74;}
+  .hpill.time.low{color:var(--red);border-color:#7a0d1c;text-shadow:0 0 8px var(--red);animation:blink .6s infinite;}
+  .hreward{font-family:var(--arcade);text-align:center;font-size:clamp(9px,2.5vw,12px);color:var(--gold);
+    text-shadow:0 0 8px rgba(255,232,31,.5);min-height:14px;margin:0 0 8px;padding-right:56px;}
+  .hreward b{color:#fff;text-shadow:0 0 8px var(--gold);}
+  .hreward.lost{color:var(--red);text-shadow:0 0 8px var(--red);}
+  .hreward.won{color:var(--green);text-shadow:0 0 8px var(--green);}
+  .hshiptag{position:absolute;top:8px;right:10px;z-index:7;font-family:var(--arcade);font-size:clamp(7px,1.9vw,9px);
+    color:var(--gold);background:rgba(0,0,0,.5);border:1px solid #7a5f00;border-radius:8px;padding:3px 7px;
+    text-shadow:0 0 6px rgba(255,232,31,.5);pointer-events:none;}
+
+  #hShopList{display:grid;gap:10px;margin:6px 0;}
+  .shopcard{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:2px solid var(--panel-b);
+    background:linear-gradient(180deg,rgba(10,20,50,.7),rgba(6,12,30,.8));text-align:left;}
+  .shopcard.owned{border-color:var(--green);box-shadow:0 0 14px rgba(57,255,20,.3);}
+  .shopcard.equipped{border-color:var(--gold);box-shadow:0 0 18px rgba(255,232,31,.5);}
+  .shopcard.cant{opacity:.6;}
+  .shopcard .sico{font-size:40px;flex:0 0 auto;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));}
+  .shopcard .sbody{flex:1 1 auto;display:flex;flex-direction:column;gap:3px;}
+  .shopcard .sname{font-family:var(--arcade);font-size:clamp(11px,3vw,15px);color:var(--gold);text-shadow:0 0 8px rgba(255,232,31,.4);}
+  .shopcard .sprice{font-family:var(--arcade);font-size:clamp(9px,2.4vw,12px);color:var(--cyan);}
+  .shopcard .sact{flex:0 0 auto;}
+  .shopcard .sact .btn{padding:11px 13px;font-size:clamp(9px,2.4vw,12px);}
+  .shopcard .stag{font-family:var(--arcade);font-size:clamp(8px,2.2vw,11px);padding:8px 10px;border-radius:10px;}
+  .shopcard .stag.eq{color:#04121f;background:linear-gradient(180deg,#ffe81f,#e0b000);}
+  .shopcard .stag.ow{color:var(--green);border:2px solid var(--green);}
+  .shopcard .stag.lock{color:var(--red);border:2px solid #7a0d1c;}
 </style>
 </head>
 <body>
@@ -564,7 +594,8 @@
   <section class="screen" id="scHLevel">
     <div class="panel">
       <h2>🎯 CAZA ESTELAR</h2>
-      <p class="sub">MEZCLA TODAS LAS TABLAS · ELIGE TU MISIÓN</p>
+      <p class="sub">MEZCLA TODAS LAS TABLAS · GANA 💰 Y COMPRA NAVES</p>
+      <button class="btn green big" id="hShopBtn" style="margin:0 0 12px">🛒 HANGAR DE NAVES · 💰 <span id="hWalletLevel">0</span></button>
       <div id="hLevels"></div>
       <button class="btn ghost" id="hLevelBack" style="margin:14px auto 0;display:block">◀ MENÚ</button>
     </div>
@@ -577,6 +608,7 @@
         <div id="hWindow" tabindex="-1" aria-label="Ventana de la nave">
           <div class="hstars"></div>
           <div class="hnav" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div id="hShipTag" class="hshiptag" aria-hidden="true"></div>
           <div id="hStateMsg"></div>
           <div id="hEnemies"></div>
           <div id="hLaser"></div>
@@ -594,11 +626,14 @@
             <span class="hpill ok" id="hHitPill">✔ 0</span>
             <span class="hpill err" id="hErrPill">✖ 0</span>
             <span class="hpill miss" id="hMissPill">💥 0</span>
+            <span class="hpill cash" id="hCashPill">💰 0</span>
+            <span class="hpill time" id="hTimePill" style="display:none">⏱ —</span>
           </div>
           <div id="hHearts" class="hhearts" aria-label="Vidas"></div>
           <div class="hprog" aria-hidden="true"><div id="hProgFill"></div></div>
           <div id="hState" class="hstate" aria-live="polite">RESPONDIENDO</div>
           <div id="hQuestion" class="hquestion" aria-live="polite"></div>
+          <div id="hReward" class="hreward" aria-live="polite"></div>
           <div id="hInput">
             <div id="hTyped" tabindex="-1" aria-label="Tu respuesta"></div>
             <div class="keys" id="hKeys"></div>
@@ -626,11 +661,23 @@
       <div id="hResStats"></div>
       <div id="hResStars"></div>
       <p class="sub" id="hResMsg"></p>
+      <button class="btn green big" id="hResShop" style="margin:0 0 8px">🛒 HANGAR · 💰 <span id="hResWallet">0</span></button>
       <div class="row2">
         <button class="btn blue big" id="hResRetry">🔁 REPETIR</button>
         <button class="btn green big" id="hResNext">➡️ SIGUIENTE</button>
         <button class="btn big" id="hResMenu">🏠 MENÚ</button>
       </div>
+    </div>
+  </section>
+
+  <!-- CAZA ESTELAR · HANGAR / TIENDA DE NAVES -->
+  <section class="screen" id="scHShop">
+    <div class="panel">
+      <h2>🛒 HANGAR DE NAVES</h2>
+      <p class="sub" id="hShopWallet">💰 0 CRÉDITOS</p>
+      <p class="label">GANA CRÉDITOS ACERTANDO Y DISPARANDO · ¡LAS MÁS CHULAS VALEN MÁS!</p>
+      <div id="hShopList"></div>
+      <button class="btn ghost" id="hShopBack" style="margin:14px auto 0;display:block">◀ VOLVER</button>
     </div>
   </section>
 
@@ -831,7 +878,11 @@ function mergeProfiles(a,b){
                  passed:!!(X.passed||Y.passed),plays:Math.max(X.plays||0,Y.plays||0),
                  bestAcc:Math.max(X.bestAcc||0,Y.bestAcc||0),bestTime:isFinite(bt)?bt:0};
   });
-  if(Object.keys(H.levels).length||H.bestLevel) out.hunter=H;
+  // 💰 cartera y 🚀 naves: crédito = máximo; naves = unión de las compradas; nave equipada = la que haya
+  H.credits=Math.max(ha.credits||0,hb.credits||0);
+  H.ships=Object.assign({},ha.ships||{},hb.ships||{});
+  H.ship=ha.ship||hb.ship||'razor';
+  if(Object.keys(H.levels).length||H.bestLevel||H.credits||Object.keys(H.ships).length) out.hunter=H;
   return out;
 }
 function cloudPush(){ const name=loadStore().current; if(name&&window.cloudSet) window.cloudSet(name,loadProg()); }
@@ -1132,12 +1183,44 @@ $('#progBack').onclick=()=>show('#scMenu');
 /* Config reutilizable (mismos rangos 1..12 que el resto del juego) */
 const HLIVES=10;
 const HUNTER_LEVELS=[
-  {n:1,name:'RASTREADOR', need:5,  sim:2, size:66, speed:0.55, unknown:0.30},
-  {n:2,name:'CAZADOR',    need:7,  sim:3, size:60, speed:0.85, unknown:0.40},
-  {n:3,name:'MERCENARIO', need:9,  sim:3, size:54, speed:1.15, unknown:0.50},
-  {n:4,name:'VETERANO',   need:12, sim:4, size:48, speed:1.55, unknown:0.62},
-  {n:5,name:'LEYENDA',    need:15, sim:5, size:42, speed:2.00, unknown:0.72},
+  {n:1,name:'RASTREADOR', need:5,  sim:2, size:66, speed:0.55, unknown:0.30, bigBias:0.00},
+  {n:2,name:'CAZADOR',    need:7,  sim:3, size:60, speed:0.85, unknown:0.40, bigBias:0.00},
+  {n:3,name:'MERCENARIO', need:9,  sim:3, size:54, speed:1.15, unknown:0.50, bigBias:0.10},
+  {n:4,name:'VETERANO',   need:12, sim:4, size:48, speed:1.55, unknown:0.62, bigBias:0.20},
+  {n:5,name:'LEYENDA',    need:15, sim:5, size:42, speed:2.00, unknown:0.72, bigBias:0.30},
+  /* --- Bloque nuevo 6-10 · más dinero y dificultad. 6-8 SIN tiempo (suben de dureza);
+     9 y 10 con LÍMITE de tiempo por pregunta (35 s y 25 s). --- */
+  {n:6, name:'AS ESTELAR',  need:15, sim:5, size:40, speed:2.25, unknown:0.78, bigBias:0.45},
+  {n:7, name:'COMANDANTE',  need:16, sim:6, size:38, speed:2.55, unknown:0.84, bigBias:0.60},
+  {n:8, name:'INCURSOR',    need:16, sim:6, size:36, speed:2.85, unknown:0.90, bigBias:0.78},
+  {n:9, name:'MANDO ÉLITE', need:17, sim:6, size:34, speed:3.10, unknown:0.92, bigBias:0.88, timeLimit:35},
+  {n:10,name:'MYTHOSAUR',   need:18, sim:7, size:32, speed:3.35, unknown:0.95, bigBias:1.00, timeLimit:25},
 ];
+const HMAX=HUNTER_LEVELS.length;   // niveles disponibles (10)
+
+/* 💰 Economía + 🚀 tienda de naves (placeholders fáciles de sustituir por imágenes).
+   Cambia icon/accent/sky por tus propias naves cuando quieras. */
+const HSHIPS=[
+  {id:'razor',  name:'RAZOR CREST',  price:0,    icon:'🚀', accent:'#9fb0c0', sky:'#0b1738'},
+  {id:'nboo',   name:'CAZA N-1',     price:150,  icon:'🛩️', accent:'#f2c93a', sky:'#12233f'},
+  {id:'xwing',  name:'ALA-X',        price:350,  icon:'✈️', accent:'#ff8a3d', sky:'#221033'},
+  {id:'falcon', name:'CARGUERO YT',  price:700,  icon:'🛸', accent:'#5fe0ff', sky:'#07202a'},
+  {id:'slaveI', name:'ESCLAVO I',    price:1200, icon:'🚀', accent:'#b06bff', sky:'#1a0b2e'},
+];
+const shipById=id=>HSHIPS.find(s=>s.id===id)||HSHIPS[0];
+/* Recompensa según dificultad de la multiplicación: fácil poco, difícil más. */
+function questionPayout(q){ let c=3+Math.round(q.a*q.b/5); if(q.answer!==q.res)c+=4; return c; }
+/* Cartera / naves en el perfil (bajo hunter) */
+function hWallet(){ const H=loadProg().hunter||{}; return H.credits||0; }
+function hOwns(id){ if(id==='razor')return true; const H=loadProg().hunter||{}; return !!(H.ships&&H.ships[id]); }
+function hEquipped(){ const H=loadProg().hunter||{}; return H.ship||'razor'; }
+function hWalletAdd(n){ const p=loadProg(); const H=p.hunter||(p.hunter={bestLevel:0,levels:{}});
+  H.credits=Math.max(0,(H.credits||0)+n); saveProg(p); cloudPush(); return H.credits; }
+function hBuyShip(id){ const s=shipById(id); const p=loadProg(); const H=p.hunter||(p.hunter={bestLevel:0,levels:{}});
+  if(id==='razor'||hOwns(id)||(H.credits||0)<s.price)return false;
+  H.credits=(H.credits||0)-s.price; H.ships=H.ships||{}; H.ships[id]=true; H.ship=id; saveProg(p); cloudPush(); return true; }
+function hEquip(id){ if(!hOwns(id))return false; const p=loadProg(); const H=p.hunter||(p.hunter={bestLevel:0,levels:{}});
+  H.ship=id; saveProg(p); cloudPush(); return true; }
 
 /* Sonidos propios (sintéticos, sin archivos) reutilizando beep()/ac() */
 function sndLock(){beep(880,.05,'square',.12);setTimeout(()=>beep(1320,.06,'square',.12),60);}
@@ -1223,13 +1306,15 @@ function recordHunter(level,ships,stars,passed,accPct,timeMs){
   saveProg(p); cloudPush();
 }
 const hunterBestLevel=()=>{const H=loadProg().hunter;return H?(H.bestLevel||0):0;};
-const hunterUnlocked=()=>Math.min(hunterBestLevel()+1,5);
+const hunterUnlocked=()=>Math.min(hunterBestLevel()+1,HMAX);
 
 /* Preguntas: mezcla TODAS las tablas 1..12; alterna resultado / factor desconocido */
 function buildHunterQuestions(level){
   const arr=[];
+  const bias=level.bigBias||0;
+  const draw=()=> (Math.random()<bias) ? rnd(6,12) : rnd(1,12);   // niveles altos → factores mayores
   for(let i=0;i<TOTAL_Q;i++){
-    const a=rnd(1,12), b=rnd(1,12), res=a*b;
+    const a=draw(), b=draw(), res=a*b;
     if(Math.random()>=level.unknown){
       arr.push({a,b,res,answer:res,prompt:`${a} × ${b} = <span class="blank">?</span>`});
     }else if(Math.random()<.5){
@@ -1244,16 +1329,53 @@ function buildHunterQuestions(level){
 /* Selección de nivel */
 function showHLevels(){
   const H=loadProg().hunter||{levels:{}}, unl=hunterUnlocked();
+  $('#hWalletLevel').textContent=hWallet();
   let html='';
   HUNTER_LEVELS.forEach(L=>{
     const rec=H.levels&&H.levels[L.n], st=rec?rec.bestStars:0, locked=L.n>unl;
+    const timeTag=L.timeLimit?(' · ⏱'+L.timeLimit+'s'):'';
     html+=`<button class="btn levelBtn ${locked?'locked':''}" data-n="${L.n}" ${locked?'disabled':''}>
         <span>${locked?'🔒':'🎯'} N${L.n} · ${L.name}</span>
-        <span class="lstars">${locked?('SUPERA EL NIVEL '+(L.n-1)):('🎯 '+L.need+' NAVES'+(st?(' · '+'★'.repeat(st)):''))}</span></button>`;
+        <span class="lstars">${locked?('SUPERA EL NIVEL '+(L.n-1)):('🎯 '+L.need+' NAVES'+timeTag+(st?(' · '+'★'.repeat(st)):''))}</span></button>`;
   });
   $('#hLevels').innerHTML=html;
   $$('#hLevels .btn:not(.locked)').forEach(b=>b.onclick=()=>startHunter(HUNTER_LEVELS[(+b.dataset.n)-1]));
   show('#scHLevel');
+}
+
+/* 🚀 Aplica la nave equipada a la cabina (interfaz cambia con la nave comprada) */
+function applyShipSkin(){
+  const s=shipById(hEquipped());
+  const ck=document.querySelector('#scHunter .cockpit');
+  if(ck){ck.style.borderColor=s.accent;
+    ck.style.boxShadow=`0 0 0 2px #05070d,0 0 30px ${s.accent}66,inset 0 0 40px rgba(0,0,0,.6)`;}
+  const win=$('#hWindow');
+  if(win)win.style.background=`radial-gradient(ellipse at 50% 34%, ${s.sky} 0%, #060a1c 55%, #02030c 100%)`;
+  const tag=$('#hShipTag'); if(tag)tag.innerHTML=`${s.icon} ${s.name}`;
+}
+
+/* 🛒 Hangar: comprar / equipar naves */
+function showHShop(){
+  $('#hShopWallet').innerHTML=`💰 ${hWallet()} CRÉDITOS`;
+  const eq=hEquipped();
+  let html='';
+  HSHIPS.forEach(s=>{
+    const owned=hOwns(s.id), isEq=(s.id===eq), can=hWallet()>=s.price;
+    let action;
+    if(isEq)      action=`<span class="stag eq">EQUIPADA ✓</span>`;
+    else if(owned)action=`<button class="btn ghost shop-eq" data-id="${s.id}">EQUIPAR</button>`;
+    else if(can)  action=`<button class="btn shop-buy" data-id="${s.id}">💰 ${s.price}</button>`;
+    else          action=`<span class="stag lock">💰 ${s.price}<br>FALTAN ${s.price-hWallet()}</span>`;
+    html+=`<div class="shopcard ${isEq?'equipped':owned?'owned':(can?'':'cant')}">
+      <div class="sico">${s.icon}</div>
+      <div class="sbody"><span class="sname">${s.name}</span>
+        <span class="sprice">${s.price===0?'NAVE INICIAL':('PRECIO 💰 '+s.price)}</span></div>
+      <div class="sact">${action}</div></div>`;
+  });
+  $('#hShopList').innerHTML=html;
+  $$('#hShopList .shop-buy').forEach(b=>b.onclick=()=>{ if(hBuyShip(b.dataset.id)){sndWin();applyShipSkin();showHShop();}else sndWrong(); });
+  $$('#hShopList .shop-eq').forEach(b=>b.onclick=()=>{ if(hEquip(b.dataset.id)){sndTap();applyShipSkin();showHShop();} });
+  show('#scHShop');
 }
 
 /* Keypad propio (mismo layout que el modo clásico) */
@@ -1289,9 +1411,15 @@ function hUpdateHud(){
   $('#hHitPill').textContent='✔ '+hg.correct;
   $('#hErrPill').textContent='✖ '+hg.wrong;
   $('#hMissPill').textContent='💥 '+hg.missed;
+  $('#hCashPill').textContent='💰 '+(hg.wallet0+hg.earned);
   $('#hProgFill').style.width=Math.min(100,Math.round(hg.ships/hg.level.need*100))+'%';
 }
-function hRenderQuestion(){$('#hQuestion').innerHTML=hg.qs[hg.i].prompt;}
+function hRenderQuestion(){
+  const q=hg.qs[hg.i]; $('#hQuestion').innerHTML=q.prompt;
+  q.pay=questionPayout(q);
+  const r=$('#hReward'); r.className='hreward';
+  r.innerHTML=`ACIERTA Y DISPARA → GANA <b>💰 ${q.pay}</b>`;
+}
 function hFlash(kind){const w=hWin;w.classList.remove('flash-ok','flash-bad');void w.offsetWidth;
   w.classList.add(kind==='ok'?'flash-ok':'flash-bad');setTimeout(()=>w.classList.remove('flash-ok','flash-bad'),350);}
 
@@ -1344,7 +1472,26 @@ function hLoop(){
     c.classList.toggle('hot',hot);
     if(Date.now()-hg.lastInput>5000&&hg.petMood!=='sleep')hPet('sleep');
   }
+  // ⏱ Cuenta atrás por pregunta (niveles 9 y 10)
+  if(hg.level.timeLimit && hg.phase==='answer' && !hg.locked){
+    const rem=Math.max(0,hg.level.timeLimit-(Date.now()-hg.qStart)/1000);
+    const tp=$('#hTimePill'); tp.textContent='⏱ '+Math.ceil(rem);
+    tp.classList.toggle('low',rem<=10);
+    if(rem<=0 && !hg.timedOut){ hg.timedOut=true; hTimeUp(); }
+  }
   hg.anim=requestAnimationFrame(hLoop);
+}
+/* Se acabó el tiempo: cuenta como fallo (sin dinero) y enseña la solución */
+function hTimeUp(){
+  if(!hg||hg.locked)return; hg.locked=true;
+  const q=hg.qs[hg.i], tb=$('#hTyped');
+  hg.answered++; hg.wrong++; hg.lives=Math.max(0,hg.lives-1); hg.pending=0;
+  sndWrong(); sndLife(); hPet('sad'); hSetState('wrong'); hFlash('bad'); hLoseHeart(); hUpdateHud();
+  const r=$('#hReward'); r.className='hreward lost'; r.innerHTML='⏱ ¡SIN TIEMPO! No ganas 💰';
+  tb.className='bad';
+  hPetSay(`<b>${q.a} × ${q.b} = ${q.res}</b><br>¡Más rápido la próxima!`);
+  setTimeout(()=>{ if(hg)tb.textContent=q.answer+' ✔'; },500);
+  hg.resolveTO=setTimeout(hNextQuestion,1700);
 }
 
 /* Fase 1: responder */
@@ -1354,13 +1501,16 @@ function hAnswer(val){
   hg.answered++;
   if(ok){
     tb.className='ok'; tb.textContent=val;
-    hg.correct++; sndCorrect(); hPet('happy'); hSetState('correct'); hFlash('ok'); hUpdateHud();
+    hg.correct++; hg.pending=q.pay||questionPayout(q);   // dinero EN JUEGO: se cobra sólo si acierta el disparo
+    sndCorrect(); hPet('happy'); hSetState('correct'); hFlash('ok'); hUpdateHud();
+    const r=$('#hReward'); r.className='hreward'; r.innerHTML=`💰 <b>${hg.pending}</b> EN JUEGO · ¡DISPARA PARA COBRAR!`;
     hStartAim();
   }else{
     tb.className='bad'; tb.textContent=hg.typed||val;
-    hg.wrong++; hg.lives=Math.max(0,hg.lives-1);
+    hg.wrong++; hg.lives=Math.max(0,hg.lives-1); hg.pending=0;
     sndWrong(); sndLife(); hPet('sad'); hSetState('wrong'); hFlash('bad'); hLoseHeart(); hUpdateHud();
     $('#hStateMsg').textContent='';
+    const r=$('#hReward'); r.className='hreward lost'; r.innerHTML='FALLASTE · no ganas 💰';
     hPetSay(`<b>${q.a} × ${q.b} = ${q.res}</b><br>${HPET_ENDINGS[rnd(0,HPET_ENDINGS.length-1)]}`);  // el acompañante dice la solución
     setTimeout(()=>{ if(hg)tb.textContent=q.answer+' ✔'; },500);
     hg.resolveTO=setTimeout(hNextQuestion,1700);
@@ -1389,13 +1539,16 @@ function hFire(){
     hFireLaser(target.x,target.y,true);
     target.dead=true; const core=target.el.querySelector('.hcore'); if(core)core.classList.add('dead');
     hBoomAt(target.x,target.y); sndExplode();
-    hg.ships++; hPet('celebrate'); hSetState('hit'); hFlash('ok'); hUpdateHud();
+    hg.ships++;
+    if(hg.pending){ hg.earned+=hg.pending; const r=$('#hReward'); r.className='hreward won'; r.innerHTML=`¡COBRADO! <b>+💰 ${hg.pending}</b>`; hg.pending=0; }
+    hPet('celebrate'); hSetState('hit'); hFlash('ok'); hUpdateHud();
     setTimeout(()=>{ if(target.el.parentNode)target.el.parentNode.removeChild(target.el);
       if(hg){hg.enemies=hg.enemies.filter(e=>e!==target);hMaintainFleet();} },300);
     $('#hStateMsg').textContent=(hg.ships>=hg.level.need)?'¡FLOTA DESTRUIDA!':('QUEDAN '+(hg.level.need-hg.ships)+' NAVES');
   }else{
     hFireLaser(hg.cx,hg.cy,false);
-    hg.missed++; hPet('fright'); hSetState('miss'); hUpdateHud();
+    hg.missed++; hg.pending=0; hPet('fright'); hSetState('miss'); hUpdateHud();
+    const r=$('#hReward'); r.className='hreward lost'; r.innerHTML='¡FALLASTE EL DISPARO! Se escapó el 💰';
     $('#hStateMsg').textContent='¡FALLASTE EL DISPARO!';
   }
   c.classList.remove('on','hot');
@@ -1423,6 +1576,7 @@ function hNextQuestion(){
   hg.i++;
   if(hg.i>=TOTAL_Q)return hEndHunter(hg.ships>=hg.level.need);
   hg.phase='answer'; hg.locked=false; hg.typed='';
+  hg.qStart=Date.now(); hg.timedOut=false;
   $('#hAim').style.display='none'; $('#hInput').style.display='block';
   $('#hCross').classList.remove('on','hot');
   $('#hTyped').className=''; $('#hStateMsg').textContent=''; hPetHush();
@@ -1437,8 +1591,10 @@ function hEndHunter(win){
   const answered=hg.answered,correct=hg.correct,wrong=hg.wrong,ships=hg.ships,missed=hg.missed,lives=hg.lives;
   const acc=answered?Math.round(correct/answered*100):0;
   let stars=0; if(win){stars=1; if(wrong<=2)stars=2; if(wrong===0)stars=3;}
+  const earned=hg.earned;
   const prevBest=hunterBestLevel();
   recordHunter(L.n,ships,stars,win,acc,timeMs);
+  const balance=hWalletAdd(earned);          // 💰 los créditos ganados van a la cartera (persisten)
   hPet(win?'celebrate':'sad'); win?sndWin():sndLose(); hSetState(win?'win':'lose');
   const secs=Math.round(timeMs/1000);
   $('#hResIcon').textContent=win?'🏆':'💥';
@@ -1448,18 +1604,18 @@ function hEndHunter(win){
     Preguntas: <b>${answered}</b> · ✔ <b style="color:var(--green)">${correct}</b> · ✖ <b style="color:var(--red)">${wrong}</b><br>
     Aciertos: <b>${acc}%</b><br>
     🎯 Naves destruidas: <b style="color:var(--green)">${ships}</b> / ${L.need}<br>
-    💥 Disparos fallados: <b>${missed}</b><br>
-    ❤ Vidas restantes: <b style="color:${win?'var(--green)':'var(--red)'}">${lives}</b> / ${HLIVES}<br>
+    💰 Ganado: <b style="color:var(--gold)">+${earned}</b> · Bolsa: <b style="color:var(--gold)">${balance}</b><br>
     ⏱ Tiempo: <b>${secs}s</b>`;
   $('#hResStars').textContent=win?('⭐'.repeat(stars)+'☆'.repeat(3-stars)):'';
-  const unlockedNew=win&&L.n>prevBest&&L.n<5, mastered=win&&L.n===5&&prevBest<5;
+  $('#hResWallet').textContent=balance;
+  const unlockedNew=win&&L.n>prevBest&&L.n<HMAX, mastered=win&&L.n===HMAX&&prevBest<HMAX;
   let msg;
   if(!win) msg=(hg.lives<=0)?'Te quedaste sin escudos. ¡Repite e inténtalo de nuevo!':'Se acabaron las preguntas. ¡Casi lo tienes!';
   else if(mastered) msg='🏆 ¡ERES UNA LEYENDA DE LA GALAXIA! Has superado todos los niveles.';
-  else if(unlockedNew) msg='🔓 ¡NIVEL '+(L.n+1)+' DESBLOQUEADO!';
-  else msg='¡Bien pilotado! Prueba a mejorar tus estrellas.';
+  else if(unlockedNew) msg='🔓 ¡NIVEL '+(L.n+1)+' DESBLOQUEADO! Pásate por el 🛒 HANGAR.';
+  else msg='¡Bien pilotado! Gasta tus 💰 en el HANGAR o mejora tus estrellas.';
   $('#hResMsg').textContent=msg;
-  $('#hResNext').style.display=(win&&L.n<5)?'':'none';
+  $('#hResNext').style.display=(win&&L.n<HMAX)?'':'none';
   show('#scHResult');   // dispara hunterCleanup() (detiene bucle/timers/listeners)
 }
 
@@ -1469,11 +1625,14 @@ function startHunter(level){
   hCurLevel=level;
   hg={level,qs:buildHunterQuestions(level),i:0,answered:0,correct:0,wrong:0,missed:0,ships:0,
       lives:HLIVES,phase:'answer',locked:false,canFire:false,typed:'',enemies:[],cx:0,cy:0,
-      anim:null,resolveTO:null,lastInput:Date.now(),petMood:'',startTime:Date.now()};
+      anim:null,resolveTO:null,lastInput:Date.now(),petMood:'',startTime:Date.now(),
+      earned:0,pending:0,wallet0:hWallet(),qStart:Date.now(),timedOut:false};
   keys={left:false,right:false,up:false,down:false};
   $('#hEnemies').innerHTML=''; $('#hCross').innerHTML=HCROSS_SVG; $('#hCross').classList.remove('on','hot');
   $('#hLaser').style.opacity='0'; $('#hBoom').style.opacity='0'; $('#hStateMsg').textContent=''; hPetHush();
   $('#hTyped').className='';
+  applyShipSkin();                                  // interfaz según la nave equipada
+  const tp=$('#hTimePill'); if(level.timeLimit){tp.style.display='';tp.textContent='⏱ '+level.timeLimit;tp.classList.remove('low');}else tp.style.display='none';
   buildHKeypad(); hRenderHearts(); hRenderTyped(); hRenderQuestion(); hUpdateHud();
   hPet('neutral'); hSetState('answer');
   $('#hAim').style.display='none'; $('#hInput').style.display='block';
@@ -1522,8 +1681,12 @@ function hWire(){
   $('#goHunter').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();ac();showHLevels();}});
   $('#hLevelBack').onclick=()=>show('#scMenu');
   $('#hResRetry').onclick=()=>startHunter(hCurLevel);
-  $('#hResNext').onclick=()=>{const idx=HUNTER_LEVELS.indexOf(hCurLevel);if(idx>=0&&idx<4)startHunter(HUNTER_LEVELS[idx+1]);};
+  $('#hResNext').onclick=()=>{const idx=HUNTER_LEVELS.indexOf(hCurLevel);if(idx>=0&&idx<HMAX-1)startHunter(HUNTER_LEVELS[idx+1]);};
   $('#hResMenu').onclick=()=>show('#scMenu');
+  // 🛒 Tienda: desde el menú de niveles y desde el resultado. Volver → al menú de niveles.
+  $('#hShopBtn').onclick=()=>{ac();showHShop();};
+  $('#hResShop').onclick=()=>{ac();showHShop();};
+  $('#hShopBack').onclick=()=>showHLevels();
   const hold=(id,dir)=>{const b=$(id);
     const on=e=>{e.preventDefault();if(hg){hg.lastInput=Date.now();if(hg.petMood==='sleep')hPet('neutral');}keys[dir]=true;};
     const off=()=>{keys[dir]=false;};
