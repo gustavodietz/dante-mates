@@ -11,8 +11,9 @@
   :root{--gold:#ffe81f;--cyan:#4fe0ff;--green:#7bd63f;--amber:#ffb400;--red:#ff3b30;
     --arcade:"Press Start 2P","Courier New",monospace;}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;margin:0;}
-  body{font-family:'Trebuchet MS',system-ui,sans-serif;color:#fff;overflow:hidden;user-select:none;-webkit-user-select:none;
+  html,body{min-height:100%;margin:0;}
+  body{font-family:'Trebuchet MS',system-ui,sans-serif;color:#fff;overflow-x:hidden;overflow-y:auto;
+    -webkit-overflow-scrolling:touch;user-select:none;-webkit-user-select:none;
     /* mitad espacio (arriba) · mitad jungla (abajo) */
     background:linear-gradient(180deg,#01030c 0%,#060f2a 42%,#0f2a14 58%,#0a1b0d 100%);}
   canvas#bg{position:fixed;inset:0;z-index:0;display:block;}
