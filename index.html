@@ -52,6 +52,13 @@
   .card.jungle .go{background:linear-gradient(180deg,#a7ff6b,#3fae2a);box-shadow:0 5px 0 #1a6b12;color:#0a1c06;}
   .card.jungle:hover{box-shadow:0 0 0 2px #04120a,0 0 40px rgba(63,174,42,.7),inset 0 0 26px rgba(63,174,42,.12);}
 
+  .card.speedway{border-color:#ff6a00;background:linear-gradient(180deg,rgba(46,20,8,.82),rgba(24,10,4,.88));
+    box-shadow:0 0 0 2px #180a04,0 0 26px rgba(255,106,0,.45),inset 0 0 26px rgba(255,106,0,.08);}
+  .card.speedway .t{color:var(--gold);text-shadow:0 0 8px rgba(255,180,0,.5);}
+  .card.speedway .op{color:#ffb454;border:2px solid #7a3200;background:rgba(0,0,0,.35);}
+  .card.speedway .go{background:linear-gradient(180deg,#ffb454,#ff6a00);box-shadow:0 5px 0 #7a3200;color:#180a02;}
+  .card.speedway:hover{box-shadow:0 0 0 2px #180a04,0 0 40px rgba(255,106,0,.7),inset 0 0 26px rgba(255,106,0,.12);}
+
   .foot{font-family:var(--arcade);text-align:center;color:#9fb6d8;font-size:clamp(7px,2vw,10px);margin-top:22px;opacity:.8;}
   @media (max-width:520px){ .cards{gap:14px;} .card{flex:1 1 100%;max-width:420px;} }
 </style>
@@ -75,6 +82,13 @@
       <div class="t">LA ISLA DE LOS NÚMEROS</div>
       <div class="d">Sumas y restas · Jurassic World</div>
       <div class="op">➕➖ SUMAR Y RESTAR</div>
+      <div class="go">▶ JUGAR</div>
+    </a>
+    <a class="card speedway" href="divisiones.html">
+      <div class="ico">🏎️</div>
+      <div class="t">HOT WHEELS DIVISIONES</div>
+      <div class="d">Divisiones exactas · Carreras</div>
+      <div class="op">➗ DIVIDIR</div>
       <div class="go">▶ JUGAR</div>
     </a>
   </div>

@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Hot Wheels de las Divisiones · Dante</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#ff6a00; --red:#ff2b2b; --blue:#2b7bff; --cyan:#4fe0ff; --yellow:#ffe11f;
+    --green:#5ad84a; --asphalt:#20242c; --panel:rgba(14,16,22,.86);
+    --arcade:"Press Start 2P","Courier New",monospace;
+    --title:"Orbitron",sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;}
+  body{font-family:'Trebuchet MS',system-ui,sans-serif;color:#fff;overflow:hidden;user-select:none;-webkit-user-select:none;
+    background:linear-gradient(180deg,#0a0c12 0%,#141019 45%,#1a0e0a 100%);}
+  canvas#bg{position:fixed;inset:0;z-index:0;display:block;}
+  #crt{position:fixed;inset:0;z-index:40;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.13) 3px,rgba(0,0,0,0) 4px),
+      radial-gradient(ellipse at center,transparent 56%,rgba(0,0,0,.5) 100%);mix-blend-mode:multiply;opacity:.55;}
+
+  .screen{position:fixed;inset:0;z-index:2;display:none;flex-direction:column;align-items:center;
+    padding:16px 14px;overflow-y:auto;}
+  .screen.active{display:flex;}
+
+  h1{font-family:var(--title);font-weight:900;font-size:clamp(22px,7vw,44px);text-align:center;margin:8px 0 2px;
+    color:var(--yellow);letter-spacing:1px;
+    text-shadow:0 0 10px var(--orange),0 0 22px rgba(255,106,0,.6),3px 3px 0 #7a1400;line-height:1.05;}
+  .tag{font-family:var(--arcade);text-align:center;color:var(--cyan);font-size:clamp(8px,2.6vw,12px);
+    margin:2px 0 14px;text-shadow:0 0 8px var(--cyan);}
+
+  .panel{background:var(--panel);border:3px solid #333a46;border-radius:18px;padding:18px 16px;width:100%;max-width:520px;
+    box-shadow:0 0 0 2px #0a0c12,0 10px 30px rgba(0,0,0,.5);backdrop-filter:blur(3px);}
+
+  .btn{font-family:var(--arcade);font-size:clamp(11px,3vw,15px);border:none;border-radius:14px;color:#180a02;
+    padding:15px 18px;cursor:pointer;line-height:1.4;width:100%;
+    background:linear-gradient(180deg,#ffb454,#ff6a00);box-shadow:0 6px 0 #7a3200;transition:transform .08s,box-shadow .08s;}
+  .btn:active{transform:translateY(4px);box-shadow:0 2px 0 #7a3200;}
+  .btn.blue{background:linear-gradient(180deg,#66b6ff,#2b7bff);box-shadow:0 6px 0 #123a7a;color:#03122e;}
+  .btn.grey{background:linear-gradient(180deg,#9aa4b2,#5b6472);box-shadow:0 6px 0 #2b323c;color:#0a0e14;}
+  .btn.green{background:linear-gradient(180deg,#8bf07a,#3caf2a);box-shadow:0 6px 0 #1a6b12;color:#06210a;}
+  .btn:disabled{filter:grayscale(.7) brightness(.7);box-shadow:0 6px 0 #2b323c;cursor:not-allowed;}
+  .row{display:flex;gap:10px;width:100%;max-width:520px;}
+  .row .btn{width:auto;flex:1;}
+
+  input#nameInput{font-family:var(--arcade);font-size:16px;text-align:center;width:100%;padding:14px;border-radius:12px;
+    border:3px solid #ff6a00;background:#0c0e14;color:var(--yellow);outline:none;text-transform:uppercase;}
+
+  /* HUD superior */
+  .topbar{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:560px;margin-bottom:10px;gap:8px;}
+  .coin{font-family:var(--arcade);font-size:clamp(11px,3.2vw,15px);color:var(--yellow);
+    background:rgba(0,0,0,.4);border:2px solid #7a5f00;border-radius:999px;padding:9px 14px;text-shadow:0 0 6px var(--yellow);}
+  .homeBtn,.soundBtn{font-family:var(--arcade);font-size:12px;background:rgba(0,0,0,.4);border:2px solid #444;color:#fff;
+    border-radius:10px;padding:9px 11px;cursor:pointer;}
+
+  /* Garaje */
+  .cars{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;width:100%;max-width:560px;}
+  @media(min-width:600px){.cars{grid-template-columns:repeat(3,1fr);}}
+  .carcard{background:rgba(10,12,18,.8);border:3px solid #333a46;border-radius:16px;padding:12px 10px;text-align:center;
+    display:flex;flex-direction:column;align-items:center;gap:7px;position:relative;overflow:hidden;}
+  .carcard .art{width:78px;height:104px;display:flex;align-items:center;justify-content:center;}
+  .carcard .art svg{width:100%;height:100%;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5));}
+  .carcard .cname{font-family:var(--arcade);font-size:9px;line-height:1.4;min-height:26px;display:flex;align-items:center;}
+  .carcard .stats{font-family:var(--arcade);font-size:7px;color:#9fb6d8;line-height:1.5;}
+  .carcard .cbtn{font-family:var(--arcade);font-size:8px;border:none;border-radius:9px;padding:9px 6px;width:100%;cursor:pointer;color:#180a02;
+    background:linear-gradient(180deg,#ffb454,#ff6a00);box-shadow:0 4px 0 #7a3200;}
+  .carcard .cbtn:active{transform:translateY(3px);box-shadow:0 1px 0 #7a3200;}
+  .carcard.owned{border-color:#3caf2a;}
+  .carcard.owned .cbtn{background:linear-gradient(180deg,#8bf07a,#3caf2a);box-shadow:0 4px 0 #1a6b12;color:#06210a;}
+  .carcard.equipped{border-color:var(--yellow);box-shadow:0 0 18px rgba(255,225,31,.4);}
+  .carcard.equipped .cbtn{background:#2a2f38;color:var(--yellow);box-shadow:none;cursor:default;}
+  .carcard.cant .cbtn{background:linear-gradient(180deg,#7a828d,#4b525c);box-shadow:0 4px 0 #2b323c;color:#0a0e14;filter:grayscale(.4);}
+  .pricetag{font-family:var(--arcade);font-size:8px;color:var(--yellow);}
+  .ownedtag{position:absolute;top:6px;right:6px;font-family:var(--arcade);font-size:7px;color:#3caf2a;}
+
+  /* Pregunta */
+  #scAsk{justify-content:center;}
+  .qwrap{width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .qmeta{font-family:var(--arcade);font-size:10px;color:var(--cyan);}
+  .qcard{background:var(--panel);border:3px solid var(--orange);border-radius:20px;padding:22px 18px;width:100%;text-align:center;
+    box-shadow:0 0 24px rgba(255,106,0,.3);}
+  .qtxt{font-family:var(--title);font-weight:900;font-size:clamp(40px,13vw,72px);color:#fff;letter-spacing:2px;line-height:1;}
+  .qtxt .op{color:var(--orange);}
+  .answer{font-family:var(--arcade);font-size:clamp(22px,7vw,34px);color:var(--yellow);margin-top:14px;min-height:1.2em;
+    letter-spacing:3px;text-shadow:0 0 8px var(--yellow);}
+  .feedback{font-family:var(--arcade);font-size:12px;min-height:1.4em;margin-top:6px;}
+  .feedback.ok{color:var(--green);} .feedback.no{color:var(--red);}
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:100%;max-width:340px;}
+  .key{font-family:var(--arcade);font-size:20px;padding:16px 0;border-radius:12px;border:none;cursor:pointer;color:#fff;
+    background:linear-gradient(180deg,#3a4150,#242a34);box-shadow:0 4px 0 #10141c;}
+  .key:active{transform:translateY(3px);box-shadow:0 1px 0 #10141c;}
+  .key.ok{background:linear-gradient(180deg,#8bf07a,#3caf2a);box-shadow:0 4px 0 #1a6b12;color:#06210a;}
+  .key.del{background:linear-gradient(180deg,#ff8a5a,#e5322f);box-shadow:0 4px 0 #7a1400;}
+
+  /* Conducción */
+  #scDrive{padding:0;justify-content:flex-start;}
+  #track{position:fixed;inset:0;z-index:1;display:block;background:#123018;}
+  .driveHud{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;align-items:center;
+    padding:12px 14px;font-family:var(--arcade);font-size:11px;pointer-events:none;}
+  .driveHud .pay{color:var(--yellow);text-shadow:0 0 6px #000,0 0 10px var(--yellow);}
+  .driveHud .qn{color:#fff;text-shadow:0 0 6px #000;}
+  .metaBarWrap{position:fixed;top:44px;left:14px;right:14px;height:12px;z-index:5;background:rgba(0,0,0,.5);border:2px solid #fff;border-radius:8px;overflow:hidden;pointer-events:none;}
+  .metaBar{height:100%;width:0;background:linear-gradient(90deg,#ff6a00,#ffe11f);}
+  .steer{position:fixed;bottom:0;z-index:6;width:44%;height:46%;display:flex;align-items:flex-end;justify-content:center;
+    padding-bottom:20px;font-size:44px;color:rgba(255,255,255,.55);text-shadow:0 2px 8px #000;}
+  #steerL{left:0;} #steerR{right:0;}
+  .steer:active{color:var(--yellow);}
+  .bigmsg{position:fixed;inset:0;z-index:7;display:flex;align-items:center;justify-content:center;pointer-events:none;
+    font-family:var(--title);font-weight:900;font-size:clamp(40px,16vw,110px);color:var(--yellow);
+    text-shadow:0 0 16px #000,0 0 30px var(--orange);}
+  .ctrlNote{position:fixed;bottom:6px;left:0;right:0;z-index:6;text-align:center;font-family:var(--arcade);font-size:8px;color:#cbd6e6;pointer-events:none;opacity:.85;}
+
+  /* Resultado */
+  .stars{font-size:44px;letter-spacing:6px;margin:6px 0;}
+  .bigearn{font-family:var(--title);font-weight:900;font-size:clamp(30px,10vw,54px);color:var(--yellow);text-shadow:0 0 14px var(--orange);}
+  .rline{font-family:var(--arcade);font-size:11px;color:#cbd6e6;line-height:1.9;text-align:center;}
+
+  /* Historial */
+  .hstats{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:12px;}
+  .hstat{font-family:var(--arcade);font-size:10px;background:rgba(0,0,0,.4);border:2px solid #444;border-radius:12px;padding:10px 12px;text-align:center;color:#fff;}
+  .hstat b{display:block;color:var(--yellow);font-size:15px;margin-top:5px;}
+  .hlist{width:100%;max-width:520px;display:flex;flex-direction:column;gap:7px;}
+  .hitem{font-family:var(--arcade);font-size:9px;background:rgba(10,12,18,.7);border:2px solid #2b323c;border-radius:10px;
+    padding:9px 11px;display:flex;justify-content:space-between;gap:8px;color:#cbd6e6;}
+  .hitem .e{color:var(--yellow);}
+  .empty{font-family:var(--arcade);font-size:10px;color:#8494ab;text-align:center;padding:20px;}
+  .mt{margin-top:12px;} .mt2{margin-top:20px;}
+  .center{text-align:center;}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+<div id="crt"></div>
+
+<!-- ☁️ Firebase: sincroniza la partida de Dante entre dispositivos por su nombre -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import { getDatabase, ref, get, set } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyDLc34x_qbYk-WkbPbQtP-S1ONNnU6ZEAU",
+    authDomain: "dante-mates.firebaseapp.com",
+    databaseURL: "https://dante-mates-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "dante-mates",
+    storageBucket: "dante-mates.firebasestorage.app",
+    messagingSenderId: "696890882370",
+    appId: "1:696890882370:web:beba6a7448e5d0aea9b0db"
+  };
+  const keyOf = n => 'profiles/hotwheels_' + String(n||'').toLowerCase().trim().replace(/[.#$\[\]\/\s]+/g,'_');
+  try {
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    window.cloudGet = async (name) => {
+      try { const s = await get(ref(db, keyOf(name))); return s.exists() ? s.val() : null; }
+      catch(e){ console.warn('cloudGet', e); return undefined; }   // undefined = error de red
+    };
+    window.cloudSet = async (name, data) => {
+      try { await set(ref(db, keyOf(name)), data); return true; }
+      catch(e){ console.warn('cloudSet', e); return false; }
+    };
+    window.cloudReady = true;
+  } catch(e){ console.warn('Firebase init falló', e); window.cloudReady = false; }
+</script>
+
+<!-- ===== PANTALLAS ===== -->
+<div id="scName" class="screen active">
+  <h1>HOT WHEELS<br>DIVISIONES</h1>
+  <p class="tag">🏁 ¡DIVIDE Y CONDUCE! 🏎️</p>
+  <div class="panel center">
+    <p class="rline">ESCRIBE TU NOMBRE, PILOTO</p>
+    <input id="nameInput" maxlength="14" placeholder="DANTE" autocomplete="off">
+    <button id="enterBtn" class="btn mt">▶ ¡A CORRER!</button>
+  </div>
+</div>
+
+<div id="scMenu" class="screen">
+  <div class="topbar">
+    <span class="coin" id="menuCoin">🪙 0</span>
+    <button class="soundBtn" id="soundBtn">🔊</button>
+  </div>
+  <h1>HOT WHEELS</h1>
+  <p class="tag" id="menuGreet">PILOTO: DANTE</p>
+  <div class="panel center">
+    <button class="btn" id="goPlay">🏁 CARRERA</button>
+    <button class="btn blue mt" id="goGarage">🔧 GARAJE</button>
+    <button class="btn grey mt" id="goHist">📈 HISTORIAL</button>
+  </div>
+  <p class="rline mt2">Acierta la división ➜ conduce sin salirte ➜ ¡gana dinero!</p>
+</div>
+
+<div id="scGarage" class="screen">
+  <div class="topbar">
+    <button class="homeBtn" id="garHome">🏠</button>
+    <span class="coin" id="garCoin">🪙 0</span>
+  </div>
+  <h1>GARAJE</h1>
+  <p class="tag">MEJORES COCHES = MÁS AGARRE Y VELOCIDAD</p>
+  <div class="cars" id="carGrid"></div>
+  <div style="height:20px"></div>
+</div>
+
+<div id="scHist" class="screen">
+  <div class="topbar">
+    <button class="homeBtn" id="hHome">🏠</button>
+    <span class="coin" id="hCoin">🪙 0</span>
+  </div>
+  <h1>HISTORIAL</h1>
+  <div class="hstats" id="hStats"></div>
+  <div class="hlist" id="hList"></div>
+  <div style="height:20px"></div>
+</div>
+
+<div id="scAsk" class="screen">
+  <div class="qwrap">
+    <div class="qmeta" id="qMeta">PREGUNTA 1/8 · 🪙 0</div>
+    <div class="qcard">
+      <div class="qtxt" id="qTxt">28 <span class="op">÷</span> 2</div>
+      <div class="answer" id="qAns">_</div>
+      <div class="feedback" id="qFb">&nbsp;</div>
+    </div>
+    <div class="keypad" id="keypad"></div>
+  </div>
+</div>
+
+<div id="scDrive" class="screen">
+  <canvas id="track"></canvas>
+  <div class="driveHud">
+    <span class="qn" id="drvQn">🏁 1/8</span>
+    <span class="pay" id="drvPay">🪙 +0</span>
+  </div>
+  <div class="metaBarWrap"><div class="metaBar" id="metaBar"></div></div>
+  <div class="steer" id="steerL">◀</div>
+  <div class="steer" id="steerR">▶</div>
+  <div class="bigmsg" id="bigMsg" style="display:none"></div>
+  <div class="ctrlNote" id="ctrlNote">Inclina el móvil para girar</div>
+</div>
+
+<div id="scResult" class="screen">
+  <h1 id="resTitle">¡META!</h1>
+  <div class="panel center">
+    <div class="stars" id="resStars">★★★</div>
+    <div class="rline">HAS GANADO</div>
+    <div class="bigearn" id="resEarn">🪙 0</div>
+    <div class="rline mt" id="resDetail"></div>
+    <button class="btn mt2" id="resAgain">🔁 OTRA CARRERA</button>
+    <div class="row mt">
+      <button class="btn blue" id="resGarage">🔧 GARAJE</button>
+      <button class="btn grey" id="resMenu">🏠 MENÚ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== HOT WHEELS · DIVISIONES EXACTAS ===== */
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+
+/* ---------- Sonido (Web Audio, sin ficheros) ---------- */
+let audioOn=true, actx=null;
+function ac(){ if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+  if(actx&&actx.state==='suspended'){try{actx.resume();}catch(e){}} return actx; }
+function beep(f,d,t='sine',v=.2){ if(!audioOn)return; const c=ac(); if(!c)return;
+  const o=c.createOscillator(),g=c.createGain(); o.type=t; o.frequency.value=f; o.connect(g); g.connect(c.destination);
+  g.gain.setValueAtTime(v,c.currentTime); g.gain.exponentialRampToValueAtTime(1e-4,c.currentTime+d);
+  o.start(); o.stop(c.currentTime+d); }
+function sweep(f1,f2,d,t='sawtooth',v=.18){ if(!audioOn)return; const c=ac(); if(!c)return;
+  const o=c.createOscillator(),g=c.createGain(); o.type=t; o.connect(g); g.connect(c.destination);
+  o.frequency.setValueAtTime(f1,c.currentTime); o.frequency.exponentialRampToValueAtTime(f2,c.currentTime+d);
+  g.gain.setValueAtTime(v,c.currentTime); g.gain.exponentialRampToValueAtTime(1e-4,c.currentTime+d);
+  o.start(); o.stop(c.currentTime+d); }
+const sndTap  =()=>beep(560,.06,'square',.15);
+const sndCorrect=()=>{beep(660,.09,'square',.2);setTimeout(()=>beep(990,.12,'square',.2),90);};
+const sndWrong=()=>sweep(240,90,.35,'sawtooth',.2);
+const sndVroom=()=>sweep(120,420,.5,'sawtooth',.18);
+const sndCrash=()=>{sweep(400,60,.4,'sawtooth',.25);beep(80,.3,'square',.2);};
+const sndMeta =()=>{[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.13,'square',.2),i*90));};
+const sndCoin =()=>{beep(880,.06,'square',.15);setTimeout(()=>beep(1320,.08,'square',.15),70);};
+
+/* ---------- Fondo: líneas de velocidad ---------- */
+(function(){
+  const cv=$('#bg'),ctx=cv.getContext('2d');let W,H,ln=[];
+  function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;ln=[];
+    for(let i=0;i<70;i++)ln.push({x:Math.random()*W,y:Math.random()*H,len:Math.random()*40+10,sp:Math.random()*3+1,
+      c:Math.random()<.5?'rgba(255,106,0,':'rgba(79,224,255,'});}
+  addEventListener('resize',resize);resize();
+  (function loop(){ctx.clearRect(0,0,W,H);
+    for(const l of ln){l.x-=l.sp*2.2;if(l.x+l.len<0){l.x=W+Math.random()*80;l.y=Math.random()*H;}
+      ctx.strokeStyle=l.c+(.10+l.sp*.05)+')';ctx.lineWidth=1.6;
+      ctx.beginPath();ctx.moveTo(l.x,l.y);ctx.lineTo(l.x+l.len,l.y);ctx.stroke();}
+    requestAnimationFrame(loop);})();
+})();
+
+/* ---------- Coches (vista cenital, SVG arcade) ---------- */
+function wheels(){return `<rect x="4" y="16" width="9" height="20" rx="3" fill="#111"/><rect x="47" y="16" width="9" height="20" rx="3" fill="#111"/><rect x="4" y="64" width="9" height="20" rx="3" fill="#111"/><rect x="47" y="64" width="9" height="20" rx="3" fill="#111"/>`;}
+const CAR_SVG={
+  // 1 · Utilitario (gratis)
+  utilitario:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">${wheels()}
+    <rect x="12" y="8" width="36" height="84" rx="15" fill="#d64b3a" stroke="#7a1400" stroke-width="2"/>
+    <path d="M17 24 h26 l-3 14 h-20 z" fill="#bfe0ff" opacity=".9"/>
+    <rect x="16" y="52" width="28" height="20" rx="5" fill="#a83226"/>
+    <rect x="20" y="12" width="20" height="6" rx="3" fill="#ffd24d"/></svg>`,
+  // 2 · Deportivo
+  deportivo:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">${wheels()}
+    <path d="M30 4 C46 12 48 30 46 55 C45 78 42 94 30 96 C18 94 15 78 14 55 C12 30 14 12 30 4 Z" fill="#ffdf22" stroke="#8a6a00" stroke-width="2"/>
+    <path d="M20 30 h20 l-2 16 h-16 z" fill="#173042" opacity=".92"/>
+    <rect x="22" y="52" width="16" height="18" rx="4" fill="#e0b800"/>
+    <rect x="24" y="60" width="12" height="30" fill="#111"/></svg>`,
+  // 3 · Descapotable
+  descapotable:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">${wheels()}
+    <rect x="12" y="8" width="36" height="84" rx="17" fill="#37c0e6" stroke="#0d5a70" stroke-width="2"/>
+    <rect x="17" y="30" width="26" height="34" rx="8" fill="#5a3a22"/>
+    <rect x="21" y="34" width="7" height="12" rx="2" fill="#2a1a10"/>
+    <rect x="32" y="34" width="7" height="12" rx="2" fill="#2a1a10"/>
+    <path d="M17 20 h26 l-2 8 h-22 z" fill="#cff2ff" opacity=".9"/></svg>`,
+  // 4 · 4x4 / SUV
+  suv:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="14" width="11" height="22" rx="3" fill="#111"/><rect x="47" y="14" width="11" height="22" rx="3" fill="#111"/><rect x="2" y="64" width="11" height="22" rx="3" fill="#111"/><rect x="47" y="64" width="11" height="22" rx="3" fill="#111"/>
+    <rect x="11" y="6" width="38" height="88" rx="8" fill="#3f7a3a" stroke="#173d15" stroke-width="2"/>
+    <rect x="16" y="20" width="28" height="16" rx="3" fill="#bfe0ff" opacity=".9"/>
+    <rect x="16" y="56" width="28" height="16" rx="3" fill="#2f5c2b"/>
+    <rect x="18" y="10" width="24" height="6" rx="2" fill="#1e3d1b"/>
+    <rect x="20" y="42" width="20" height="10" rx="2" fill="#2f5c2b"/></svg>`,
+  // 5 · Monster truck
+  monster:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="24" r="10" fill="#111"/><circle cx="9" cy="24" r="4" fill="#777"/><circle cx="51" cy="24" r="10" fill="#111"/><circle cx="51" cy="24" r="4" fill="#777"/><circle cx="9" cy="76" r="10" fill="#111"/><circle cx="9" cy="76" r="4" fill="#777"/><circle cx="51" cy="76" r="10" fill="#111"/><circle cx="51" cy="76" r="4" fill="#777"/>
+    <rect x="15" y="16" width="30" height="68" rx="8" fill="#ff6a00" stroke="#7a3200" stroke-width="2"/>
+    <rect x="19" y="30" width="22" height="16" rx="3" fill="#222"/>
+    <path d="M18 20 h24 l-3 8 h-18 z" fill="#ffe11f"/></svg>`,
+  // 6 · Clásico "Grease" (hot rod con llamas)
+  clasico:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">${wheels()}
+    <rect x="11" y="8" width="38" height="84" rx="12" fill="#1c1c22" stroke="#000" stroke-width="2"/>
+    <path d="M14 60 q6 -8 10 0 q4 -10 8 0 q5 -8 9 2 l-2 26 h-24 z" fill="#ff3b00"/>
+    <path d="M16 66 q5 -6 9 0 q4 -7 8 0 l-1 18 h-16 z" fill="#ffd21f"/>
+    <path d="M17 22 h26 l-3 14 h-20 z" fill="#9fdcff" opacity=".9"/>
+    <rect x="22" y="8" width="16" height="8" rx="2" fill="#c0c6cf"/></svg>`,
+  // 7 · Muscle car
+  muscle:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">${wheels()}
+    <rect x="10" y="6" width="40" height="88" rx="10" fill="#7a1fd6" stroke="#3a0a70" stroke-width="2"/>
+    <rect x="26" y="8" width="8" height="88" fill="#fff" opacity=".85"/>
+    <path d="M16 26 h28 l-3 15 h-22 z" fill="#1a1030" opacity=".95"/>
+    <rect x="22" y="14" width="16" height="8" rx="2" fill="#111"/>
+    <rect x="18" y="52" width="24" height="18" rx="4" fill="#5a12a8"/></svg>`,
+  // 8 · Rally
+  rally:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">${wheels()}
+    <rect x="11" y="10" width="38" height="80" rx="11" fill="#0e63d6" stroke="#062f6b" stroke-width="2"/>
+    <rect x="8" y="86" width="44" height="9" rx="3" fill="#111"/>
+    <rect x="8" y="83" width="6" height="10" fill="#333"/><rect x="46" y="83" width="6" height="10" fill="#333"/>
+    <path d="M16 26 h28 l-3 15 h-22 z" fill="#cdefff" opacity=".92"/>
+    <circle cx="20" cy="16" r="4" fill="#fff"/><circle cx="40" cy="16" r="4" fill="#fff"/>
+    <circle cx="30" cy="60" r="9" fill="#fff"/><text x="30" y="65" font-size="12" fill="#0e63d6" text-anchor="middle" font-family="Arial" font-weight="bold">7</text></svg>`,
+  // 9 · GT competición
+  gt:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">${wheels()}
+    <path d="M30 4 C48 10 50 34 48 60 C46 82 40 95 30 96 C20 95 14 82 12 60 C10 34 12 10 30 4 Z" fill="#101318" stroke="#000" stroke-width="2"/>
+    <rect x="8" y="86" width="44" height="8" rx="3" fill="#e5322f"/>
+    <path d="M18 28 h24 l-2 16 h-20 z" fill="#3ad0ff" opacity=".9"/>
+    <path d="M14 50 l32 0 -4 40 -24 0 z" fill="#e5322f" opacity=".85"/>
+    <rect x="24" y="8" width="12" height="70" fill="#ffe11f" opacity=".9"/></svg>`,
+  // 10 · Fórmula 1
+  f1:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="14" width="12" height="18" rx="4" fill="#111"/><rect x="47" y="14" width="12" height="18" rx="4" fill="#111"/><rect x="1" y="70" width="12" height="18" rx="4" fill="#111"/><rect x="47" y="70" width="12" height="18" rx="4" fill="#111"/>
+    <rect x="10" y="4" width="40" height="10" rx="3" fill="#e5322f"/>
+    <rect x="24" y="14" width="12" height="72" rx="5" fill="#e5322f" stroke="#7a1400" stroke-width="1.5"/>
+    <rect x="8" y="86" width="44" height="10" rx="3" fill="#101318"/>
+    <circle cx="30" cy="44" r="6" fill="#101318"/>
+    <ellipse cx="30" cy="34" rx="5" ry="8" fill="#3ad0ff"/></svg>`,
+};
+const CARS=[
+  {id:'utilitario', name:'UTILITARIO',   price:0,    grip:1.00, speed:1.00},
+  {id:'descapotable',name:'DESCAPOTABLE', price:120,  grip:1.06, speed:1.06},
+  {id:'suv',        name:'4X4 TODOTERR.', price:260,  grip:1.14, speed:1.05},
+  {id:'deportivo',  name:'DEPORTIVO',     price:420,  grip:1.18, speed:1.15},
+  {id:'clasico',    name:'CLÁSICO GREASE',price:650,  grip:1.20, speed:1.14},
+  {id:'monster',    name:'MONSTER TRUCK', price:900,  grip:1.28, speed:1.10},
+  {id:'muscle',     name:'MUSCLE CAR',    price:1250, grip:1.26, speed:1.24},
+  {id:'rally',      name:'RALLY',         price:1700, grip:1.34, speed:1.26},
+  {id:'gt',         name:'GT COMPETICIÓN',price:2300, grip:1.38, speed:1.34},
+  {id:'f1',         name:'FÓRMULA 1',     price:3200, grip:1.45, speed:1.45},
+];
+const carById=id=>CARS.find(c=>c.id===id)||CARS[0];
+
+/* ---------- Progreso (localStorage + nube) ---------- */
+const SKEY='dante_hotwheels_v1';
+const blankGar=()=>({credits:0,cars:{},car:'utilitario',races:0,correct:0,wrong:0,best:0,bestDist:0,history:[]});
+const loadStore=()=>{try{return JSON.parse(localStorage.getItem(SKEY))||{current:null,profiles:{}};}catch(e){return{current:null,profiles:{}};}};
+const saveStore=s=>{try{localStorage.setItem(SKEY,JSON.stringify(s));}catch(e){}};
+const loadProg=()=>{const s=loadStore();const p=(s.current&&s.profiles[s.current])||{};return Object.assign(blankGar(),p);};
+const saveProg=p=>{const s=loadStore();if(!s.current)return;s.profiles[s.current]=p;saveStore(s);};
+const currentName=()=>loadStore().current;
+
+function enterProfile(name){name=(name||'').trim();if(!name)return false;
+  const s=loadStore();if(!s.profiles[name])s.profiles[name]=blankGar();s.current=name;saveStore(s);return true;}
+
+/* cartera / coches */
+const wallet=()=>loadProg().credits;
+function walletAdd(n){const p=loadProg();p.credits=Math.max(0,(p.credits||0)+n);saveProg(p);cloudPush();return p.credits;}
+const owns=id=>id==='utilitario'||!!(loadProg().cars||{})[id];
+const equipped=()=>loadProg().car||'utilitario';
+function buyCar(id){const c=carById(id),p=loadProg();if(owns(id)||(p.credits||0)<c.price)return false;
+  p.credits-=c.price;p.cars=p.cars||{};p.cars[id]=true;p.car=id;saveProg(p);cloudPush();return true;}
+function equipCar(id){if(!owns(id))return false;const p=loadProg();p.car=id;saveProg(p);cloudPush();return true;}
+
+/* ☁️ sincronización */
+function mergeProfiles(a,b){a=Object.assign(blankGar(),a||{});b=Object.assign(blankGar(),b||{});
+  const out=blankGar();
+  out.credits=Math.max(a.credits||0,b.credits||0);
+  out.cars=Object.assign({},a.cars||{},b.cars||{});
+  out.car=a.car||b.car||'utilitario';
+  out.races=Math.max(a.races||0,b.races||0);
+  out.correct=Math.max(a.correct||0,b.correct||0);
+  out.wrong=Math.max(a.wrong||0,b.wrong||0);
+  out.best=Math.max(a.best||0,b.best||0);
+  out.bestDist=Math.max(a.bestDist||0,b.bestDist||0);
+  // historial: unir por marca de tiempo, quedarnos con los 20 más recientes
+  const seen={},all=[...(a.history||[]),...(b.history||[])];
+  all.forEach(h=>{if(h&&h.id!=null)seen[h.id]=h;});
+  out.history=Object.values(seen).sort((x,y)=>(y.id||0)-(x.id||0)).slice(0,20);
+  return out;}
+function cloudPush(){const name=currentName();if(name&&window.cloudSet)window.cloudSet(name,loadProg());}
+async function cloudSync(name){if(!window.cloudGet)return;const remote=await window.cloudGet(name);
+  if(remote===undefined)return;const merged=mergeProfiles(loadProg(),remote||{});saveProg(merged);
+  if(window.cloudSet)window.cloudSet(name,merged);}
+
+/* ---------- Navegación ---------- */
+function show(id){ if(drive&&id!=='#scDrive')driveCleanup();
+  $$('.screen').forEach(s=>s.classList.remove('active'));$(id).classList.add('active');}
+function refreshCoins(){const w='🪙 '+wallet();$('#menuCoin').textContent=w;$('#garCoin').textContent=w;$('#hCoin').textContent=w;}
+
+/* ---------- Generador de divisiones exactas ---------- */
+function makeDivision(){
+  const d=rnd(2,9);                          // divisor
+  let q;                                      // cociente (respuesta)
+  if(Math.random()<0.40){                     // "grandes" tipo 110/5
+    q=rnd(11,Math.min(25,Math.floor(150/d)));
+  }else{
+    q=rnd(2,12);
+  }
+  const n=d*q;                                // dividendo (exacto)
+  // dificultad 1..5 según tamaño del dividendo y del divisor
+  let sc=0;
+  if(n>120)sc+=4; else if(n>80)sc+=3; else if(n>45)sc+=2; else if(n>20)sc+=1;
+  sc+=({2:0,5:0,10:0,3:1,4:1,6:2,7:2,8:2,9:2}[d]||1);
+  const tier=clamp(Math.round(sc/1.6),1,5);   // 1 fácil … 5 grande
+  const pay=[0,6,10,16,24,36][tier];
+  return {n,d,q,tier,pay};
+}
+
+/* ---------- Estado de carrera ---------- */
+const QN=8;   // preguntas por carrera
+let race=null, buf='';
+
+function startRace(){ac();sndVroom();
+  race={i:0,correct:0,earned:0,metas:0};
+  ensureTilt();          // pide permiso de giroscopio dentro del gesto del usuario
+  nextQuestion();}
+
+function nextQuestion(){
+  if(race.i>=QN){endRace();return;}
+  race.q=makeDivision();buf='';
+  $('#qMeta').textContent=`PREGUNTA ${race.i+1}/${QN} · 🪙 ${race.earned}`;
+  $('#qTxt').innerHTML=`${race.q.n} <span class="op">÷</span> ${race.q.d}`;
+  $('#qAns').textContent='_';
+  $('#qFb').innerHTML='&nbsp;';$('#qFb').className='feedback';
+  show('#scAsk');
+}
+function renderAns(){$('#qAns').textContent=buf===''?'_':buf;}
+function pressKey(k){
+  if(k==='del'){buf=buf.slice(0,-1);sndTap();renderAns();return;}
+  if(k==='ok'){submitAns();return;}
+  if(buf.length>=3)return; buf+=k;sndTap();renderAns();
+}
+function submitAns(){
+  if(buf==='')return;
+  const val=parseInt(buf,10);
+  if(val===race.q.q){
+    race.correct++;
+    const p=loadProg();p.correct=(p.correct||0)+1;saveProg(p);
+    $('#qFb').textContent='¡BIEN! ▶ ACELERA';$('#qFb').className='feedback ok';
+    sndCorrect();
+    setTimeout(()=>startDrive(race.q),650);
+  }else{
+    const p=loadProg();p.wrong=(p.wrong||0)+1;saveProg(p);
+    $('#qFb').innerHTML=`${race.q.n} ÷ ${race.q.d} = <b>${race.q.q}</b>`;$('#qFb').className='feedback no';
+    sndWrong();
+    race.results=race.results||[];
+    setTimeout(()=>{race.i++;nextQuestion();},1500);
+  }
+}
+function buildKeypad(){
+  const keys=['1','2','3','4','5','6','7','8','9','del','0','ok'];
+  $('#keypad').innerHTML=keys.map(k=>{
+    if(k==='del')return `<button class="key del" data-k="del">⌫</button>`;
+    if(k==='ok') return `<button class="key ok" data-k="ok">OK</button>`;
+    return `<button class="key" data-k="${k}">${k}</button>`;}).join('');
+  $$('#keypad .key').forEach(b=>b.onclick=()=>pressKey(b.dataset.k));
+}
+buildKeypad();
+
+/* ---------- Control por inclinación (giroscopio) + respaldo táctil ---------- */
+let tilt={on:false,center:null,gamma:0}, tiltAsked=false;
+function onTilt(e){ if(e.gamma==null)return; tilt.on=true; tilt.gamma=e.gamma;
+  if(tilt.center==null)tilt.center=e.gamma; }
+function ensureTilt(){
+  if(tiltAsked)return; tiltAsked=true;
+  try{
+    if(typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function'){
+      DeviceOrientationEvent.requestPermission().then(st=>{
+        if(st==='granted')addEventListener('deviceorientation',onTilt,true);
+      }).catch(()=>{});
+    }else if('DeviceOrientationEvent' in window){
+      addEventListener('deviceorientation',onTilt,true);
+    }
+  }catch(e){}
+}
+// respaldo: botones en pantalla + teclado
+let steer=0; // -1 izq, 1 der, 0 nada (por táctil/teclado)
+function bindSteer(el,dir){
+  const dn=e=>{e.preventDefault();steer=dir;};const up=e=>{e.preventDefault();if(steer===dir)steer=0;};
+  el.addEventListener('touchstart',dn,{passive:false});el.addEventListener('touchend',up);el.addEventListener('touchcancel',up);
+  el.addEventListener('mousedown',dn);el.addEventListener('mouseup',up);el.addEventListener('mouseleave',up);
+}
+bindSteer($('#steerL'),-1);bindSteer($('#steerR'),1);
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')steer=-1;else if(e.key==='ArrowRight')steer=1;});
+addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight')steer=0;});
+
+/* ---------- Motor de conducción (canvas cenital) ---------- */
+let drive=null;
+const trackCv=$('#track'),tctx=trackCv.getContext('2d');
+const carImgCache={};
+function carImage(id){
+  if(carImgCache[id])return carImgCache[id];
+  const img=new Image();img.src='data:image/svg+xml;utf8,'+encodeURIComponent(CAR_SVG[id]);
+  carImgCache[id]=img;return img;}
+
+function roadCenter(worldY,d){ // centro de la carretera (px) según la distancia del mundo
+  const amp=Math.min(d.W*0.22,150);
+  let c=d.W/2 + Math.sin(worldY*0.0042)*amp + Math.sin(worldY*0.0015+1.3)*amp*0.55;
+  return clamp(c,d.roadHalf+8,d.W-d.roadHalf-8);
+}
+function startDrive(q){
+  const car=carById(equipped());
+  const W=trackCv.width=innerWidth,H=trackCv.height=innerHeight;
+  const roadHalf=Math.min(W*0.30,168);
+  const speed=235*car.speed;                 // px/seg
+  const metaDist=speed*5.2;                   // ~5s de recorrido
+  const carScreenY=H-150;
+  const bumps=[];
+  const nb=2+q.tier;                          // más baches si es difícil
+  for(let i=0;i<nb;i++)bumps.push({wy:rnd(220,metaDist-120),off:rnd(-roadHalf+40,roadHalf-40),hit:false});
+  drive={W,H,roadHalf,speed,metaDist,carScreenY,dist:0,carX:W/2,vx:0,car,q,bumps,
+    shake:0,over:false,img:carImage(car.id),last:null,steerMax:300*car.grip,startT:null,countdown:1.4};
+  $('#drvQn').textContent='🏁 '+(race.i+1)+'/'+QN;
+  $('#drvPay').textContent='🪙 +'+q.pay;
+  $('#metaBar').style.width='0%';
+  $('#ctrlNote').textContent = tilt.on ? 'Inclina el móvil ↔  (o usa ◀ ▶)' : 'Usa ◀ ▶ para girar';
+  const bm=$('#bigMsg');bm.style.display='flex';bm.textContent='3';
+  show('#scDrive');
+  drive.anim=requestAnimationFrame(driveLoop);
+}
+function driveCleanup(){ if(drive){ if(drive.anim)cancelAnimationFrame(drive.anim); } drive=null; steer=0;
+  const bm=$('#bigMsg');if(bm)bm.style.display='none';}
+
+function driveLoop(ts){
+  const d=drive; if(!d)return;
+  if(d.last==null)d.last=ts; let dt=(ts-d.last)/1000; d.last=ts; if(dt>0.05)dt=0.05;
+
+  // cuenta atrás inicial
+  if(d.countdown>0){
+    d.countdown-=dt; const bm=$('#bigMsg');
+    const n=Math.ceil(d.countdown/0.466);
+    bm.textContent=n>=3?'3':(n===2?'2':(n===1?'1':'¡YA!'));
+    if(d.countdown<=0){bm.style.display='none';sndVroom();d.startT=ts;}
+    drawTrack(d,true); d.anim=requestAnimationFrame(driveLoop); return;
+  }
+
+  // avanzar
+  d.dist+=d.speed*dt;
+  // dirección: giroscopio o botones
+  let target=0;
+  if(tilt.on && tilt.center!=null){
+    const g=clamp(tilt.gamma-tilt.center,-35,35);
+    if(Math.abs(g)>3) target=clamp(g/22,-1,1)*d.steerMax;
+  }
+  if(steer!==0) target=steer*d.steerMax;
+  // suavizado hacia el objetivo
+  d.vx += (target-d.vx)*Math.min(1,dt*10);
+  d.carX += d.vx*dt;
+  d.carX = clamp(d.carX,20,d.W-20);
+
+  // baches
+  const carWorldY=d.dist+(d.H-d.carScreenY);
+  for(const b of d.bumps){ if(b.hit)continue;
+    if(Math.abs(carWorldY-b.wy)<20){
+      const bx=roadCenter(b.wy,d)+b.off;
+      if(Math.abs(d.carX-bx)<28){ b.hit=true; d.shake=14; d.carX+=(Math.random()<.5?-1:1)*18; sndCrash(); }
+    }
+  }
+  if(d.shake>0)d.shake=Math.max(0,d.shake-dt*40);
+
+  // ¿fuera de la carretera?
+  const cen=roadCenter(carWorldY,d);
+  if(Math.abs(d.carX-cen) > d.roadHalf-14 && !d.over){
+    d.over=true; return crashOut();
+  }
+  // ¿meta?
+  if(d.dist>=d.metaDist && !d.over){ d.over=true; return metaReached(); }
+
+  $('#metaBar').style.width=clamp(d.dist/d.metaDist*100,0,100)+'%';
+  drawTrack(d,false);
+  d.anim=requestAnimationFrame(driveLoop);
+}
+
+function drawTrack(d,frozen){
+  const c=tctx,W=d.W,H=d.H;
+  let sx=0,sy=0; if(d.shake>0){sx=(Math.random()-.5)*d.shake;sy=(Math.random()-.5)*d.shake;}
+  c.save();c.translate(sx,sy);
+  // césped
+  const gg=c.createLinearGradient(0,0,0,H);gg.addColorStop(0,'#1c4a23');gg.addColorStop(1,'#0f2e15');
+  c.fillStyle=gg;c.fillRect(-20,-20,W+40,H+40);
+  // rayas laterales de césped (velocidad)
+  c.fillStyle='rgba(255,255,255,.05)';
+  const gy=(d.dist*0.6)%60;
+  for(let y=-60+gy;y<H;y+=60){c.fillRect(0,y,26,30);c.fillRect(W-26,y,26,30);}
+
+  // carretera (polígono por franjas)
+  const step=8;const left=[],right=[];
+  for(let y=-step;y<=H+step;y+=step){
+    const wy=d.dist+(d.carScreenY-y)+(d.H-d.carScreenY); // world Y en esa fila
+    const cen=roadCenter(wy,d);left.push([cen-d.roadHalf,y]);right.push([cen+d.roadHalf,y]);
+  }
+  c.beginPath();c.moveTo(left[0][0],left[0][1]);
+  for(const p of left)c.lineTo(p[0],p[1]);
+  for(let i=right.length-1;i>=0;i--)c.lineTo(right[i][0],right[i][1]);
+  c.closePath();c.fillStyle='#33383f';c.fill();
+  // bordes rojos/blancos
+  c.lineWidth=6;c.strokeStyle='#e5322f';c.beginPath();
+  left.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.stroke();
+  c.beginPath();right.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.stroke();
+  // línea central discontinua
+  c.setLineDash([26,26]);c.lineDashOffset=-(d.dist%52);c.strokeStyle='#ffe11f';c.lineWidth=5;
+  c.beginPath();
+  for(let i=0;i<left.length;i++){const cx=(left[i][0]+right[i][0])/2;i?c.lineTo(cx,left[i][1]):c.moveTo(cx,left[i][1]);}
+  c.stroke();c.setLineDash([]);
+
+  // baches
+  for(const b of d.bumps){ if(b.hit)continue;
+    const sy2=d.carScreenY-(b.wy-(d.dist+(d.H-d.carScreenY)));
+    if(sy2<-30||sy2>H+30)continue;
+    const bx=roadCenter(b.wy,d)+b.off;
+    c.fillStyle='#1a1a1e';c.beginPath();c.ellipse(bx,sy2,20,11,0,0,7);c.fill();
+    c.fillStyle='#0a0a0c';c.beginPath();c.ellipse(bx,sy2,12,6,0,0,7);c.fill();
+  }
+  // meta (cuadros)
+  if(d.metaDist-d.dist < H){
+    const my=d.carScreenY-(d.metaDist-(d.dist+(d.H-d.carScreenY)));
+    if(my>-20&&my<H+20){const cen=roadCenter(d.metaDist,d);
+      for(let i=0;i<Math.ceil(d.roadHalf*2/16);i++){const x=cen-d.roadHalf+i*16;
+        c.fillStyle=i%2? '#fff':'#111';c.fillRect(x,my-8,16,8);c.fillStyle=i%2?'#111':'#fff';c.fillRect(x,my,16,8);}
+    }
+  }
+  // coche
+  const w=46,h=77,img=d.img;
+  c.save();c.translate(d.carX,d.carScreenY);c.rotate(clamp(d.vx/d.steerMax,-1,1)*0.28);
+  if(img.complete&&img.naturalWidth){c.drawImage(img,-w/2,-h/2,w,h);}
+  else{c.fillStyle=d.car.id==='utilitario'?'#d64b3a':'#ffdf22';c.fillRect(-w/2,-h/2,w,h);}
+  c.restore();
+  c.restore();
+}
+
+function metaReached(){
+  cancelAnimationFrame(drive.anim);
+  race.earned+=drive.q.pay; race.metas++;
+  walletAdd(drive.q.pay); refreshCoins();
+  sndMeta();sndCoin();
+  const bm=$('#bigMsg');bm.style.display='flex';bm.textContent='🪙+'+drive.q.pay;
+  $('#drvPay').textContent='🪙 +'+drive.q.pay;
+  setTimeout(()=>{bm.style.display='none';race.i++;nextQuestion();},1050);
+}
+function crashOut(){
+  cancelAnimationFrame(drive.anim);
+  sndCrash();drive.shake=16;drawTrack(drive,true);
+  const bm=$('#bigMsg');bm.style.display='flex';bm.style.color='var(--red)';bm.textContent='💥';
+  setTimeout(()=>{bm.style.display='none';bm.style.color='';race.i++;nextQuestion();},1150);
+}
+
+/* ---------- Fin de carrera ---------- */
+function endRace(){
+  const p=loadProg();p.races=(p.races||0)+1;
+  p.best=Math.max(p.best||0,race.earned);
+  p.bestDist=Math.max(p.bestDist||0,race.metas);
+  const stars = race.correct>=7?3 : race.correct>=5?2 : race.correct>=3?1 : 0;
+  const entry={id:Date.now(),date:new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'}),
+    ok:race.correct,total:QN,metas:race.metas,earned:race.earned,car:equipped(),stars};
+  p.history=[entry,...(p.history||[])].slice(0,20);
+  saveProg(p);cloudPush();refreshCoins();
+  $('#resTitle').textContent = stars>=3?'¡CAMPEÓN!' : stars>=1?'¡BUENA CARRERA!' : '¡SIGUE PRACTICANDO!';
+  $('#resStars').textContent = stars>0?'★'.repeat(stars)+'☆'.repeat(3-stars):'☆☆☆';
+  $('#resEarn').textContent = '🪙 +'+race.earned;
+  $('#resDetail').innerHTML = `ACIERTOS: ${race.correct}/${QN}<br>METAS: ${race.metas}/${race.correct||0}<br>CARTERA: 🪙 ${wallet()}`;
+  if(stars>0)sndMeta();
+  show('#scResult');
+}
+
+/* ---------- Garaje ---------- */
+function renderGarage(){
+  refreshCoins();const eq=equipped(),money=wallet();
+  $('#carGrid').innerHTML=CARS.map(c=>{
+    const own=owns(c.id),isEq=c.id===eq,can=money>=c.price;
+    let cls='carcard'+(isEq?' equipped':own?' owned':(can?'':' cant'));
+    let btn,ownedtag=own&&!isEq?'<span class="ownedtag">✓ TUYO</span>':'';
+    if(isEq)btn='EQUIPADO ✓';
+    else if(own)btn='EQUIPAR';
+    else if(can)btn='🪙 '+c.price;
+    else btn='FALTAN '+(c.price-money);
+    const grip='●'.repeat(Math.round((c.grip-0.9)*10)), spd='●'.repeat(Math.round((c.speed-0.9)*10));
+    return `<div class="${cls}">${ownedtag}
+      <div class="art">${CAR_SVG[c.id]}</div>
+      <div class="cname">${c.name}</div>
+      <div class="stats">AGARRE ${grip}<br>VELOC. ${spd}</div>
+      <button class="cbtn" data-id="${c.id}">${btn}</button></div>`;
+  }).join('');
+  $$('#carGrid .cbtn').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.id;ac();
+    if(id===eq)return;
+    if(owns(id)){equipCar(id);sndTap();}
+    else{ if(buyCar(id)){sndCoin();} else {sndWrong();return;} }
+    renderGarage();
+  });
+}
+
+/* ---------- Historial ---------- */
+function renderHist(){
+  refreshCoins();const p=loadProg();
+  $('#hStats').innerHTML=`
+    <div class="hstat">CARRERAS<b>${p.races||0}</b></div>
+    <div class="hstat">ACIERTOS<b>${p.correct||0}</b></div>
+    <div class="hstat">MEJOR 🪙<b>${p.best||0}</b></div>
+    <div class="hstat">COCHES<b>${1+Object.keys(p.cars||{}).length}/${CARS.length}</b></div>`;
+  const h=p.history||[];
+  $('#hList').innerHTML = h.length? h.map(e=>`
+    <div class="hitem"><span>${e.date} · ${carById(e.car).name}</span>
+      <span>${'★'.repeat(e.stars||0)||'—'} · ${e.ok}/${e.total} · <span class="e">🪙${e.earned}</span></span></div>`).join('')
+    : '<div class="empty">Aún no has corrido ninguna carrera.<br>¡Dale a 🏁 CARRERA!</div>';
+}
+
+/* ---------- Botones / arranque ---------- */
+$('#soundBtn').onclick=()=>{audioOn=!audioOn;$('#soundBtn').textContent=audioOn?'🔊':'🔇';if(audioOn){ac();sndTap();}};
+$('#nameInput').addEventListener('keydown',e=>{if(e.key==='Enter')doEnter();});
+$('#enterBtn').onclick=doEnter;
+async function doEnter(){
+  if(!enterProfile($('#nameInput').value)){$('#nameInput').focus();return;}
+  ac();sndTap();
+  const eb=$('#enterBtn'),old=eb.textContent;
+  eb.textContent='☁ SINCRONIZANDO…';eb.style.pointerEvents='none';
+  try{await cloudSync(currentName());}catch(e){}
+  eb.textContent=old;eb.style.pointerEvents='';
+  goMenu();
+}
+function goMenu(){$('#menuGreet').textContent='PILOTO: '+((currentName()||'').toUpperCase());refreshCoins();show('#scMenu');}
+$('#goPlay').onclick =()=>{ac();startRace();};
+$('#goGarage').onclick=()=>{ac();renderGarage();show('#scGarage');};
+$('#goHist').onclick  =()=>{ac();renderHist();show('#scHist');};
+$('#garHome').onclick =()=>goMenu();
+$('#hHome').onclick   =()=>goMenu();
+$('#resAgain').onclick =()=>{ac();startRace();};
+$('#resGarage').onclick=()=>{ac();renderGarage();show('#scGarage');};
+$('#resMenu').onclick  =()=>goMenu();
+
+// autologin si ya había un piloto guardado
+(function(){const n=currentName();if(n){$('#nameInput').value=n;cloudSync(n).then(()=>{}).catch(()=>{});}})();
+</script>
+</body>
+</html>
