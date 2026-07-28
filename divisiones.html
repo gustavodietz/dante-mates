@@ -427,13 +427,16 @@ function show(id){ if(drive&&id!=='#scDrive')driveCleanup();
 function refreshCoins(){const w='🪙 '+wallet();$('#menuCoin').textContent=w;$('#garCoin').textContent=w;$('#hCoin').textContent=w;}
 
 /* ---------- Generador de divisiones exactas ---------- */
+let LEVEL=1;                                   // dificultad por niveles (vamos poco a poco)
 function makeDivision(){
-  const d=rnd(2,9);                          // divisor
-  let q;                                      // cociente (respuesta)
-  if(Math.random()<0.40){                     // "grandes" tipo 110/5
-    q=rnd(11,Math.min(25,Math.floor(150/d)));
-  }else{
-    q=rnd(2,12);
+  let d,q;
+  if(LEVEL<=1){                                // NIVEL 1: fácil (divisores sencillos, cociente pequeño)
+    d=[2,2,3,4,5,5,10][rnd(0,6)];
+    q=rnd(2,9);
+  }else{                                       // niveles siguientes: incluye "grandes" tipo 110/5
+    d=rnd(2,9);
+    if(Math.random()<0.40) q=rnd(11,Math.min(25,Math.floor(150/d)));
+    else                   q=rnd(2,12);
   }
   const n=d*q;                                // dividendo (exacto)
   // dificultad 1..5 según tamaño del dividendo y del divisor
@@ -457,7 +460,7 @@ function startRace(){ac();sndVroom();
 function nextQuestion(){
   if(race.i>=QN){endRace();return;}
   race.q=makeDivision();buf='';
-  $('#qMeta').textContent=`PREGUNTA ${race.i+1}/${QN} · 🪙 ${race.earned}`;
+  $('#qMeta').textContent=`NV${LEVEL} · PREGUNTA ${race.i+1}/${QN} · 🪙 ${race.earned}`;
   $('#qTxt').innerHTML=`${race.q.n} <span class="op">÷</span> ${race.q.d}`;
   $('#qAns').textContent='_';
   $('#qFb').innerHTML='&nbsp;';$('#qFb').className='feedback';
@@ -533,7 +536,7 @@ function carImage(id){
   carImgCache[id]=img;return img;}
 
 function roadCenter(worldY,d){ // centro de la carretera (px) según la distancia del mundo
-  const amp=Math.min(d.W*0.22,150);
+  const amp=Math.min(d.W*0.22,150)*(d.curve||1);
   let c=d.W/2 + Math.sin(worldY*0.0042)*amp + Math.sin(worldY*0.0015+1.3)*amp*0.55;
   return clamp(c,d.roadHalf+8,d.W-d.roadHalf-8);
 }
@@ -542,12 +545,14 @@ function startDrive(q){
   const W=trackCv.width=innerWidth,H=trackCv.height=innerHeight;
   const roadHalf=Math.min(W*0.30,168);
   const speed=235*car.speed;                 // px/seg
-  const metaDist=speed*5.2;                   // ~5s de recorrido
+  const driveSecs=LEVEL<=1?15.6:5.2;          // NIVEL 1: carreras el triple de largas
+  const curve=LEVEL<=1?0.6:1;                 // NIVEL 1: curvas más suaves
+  const metaDist=speed*driveSecs;
   const carScreenY=H-150;
   const bumps=[];
-  const nb=2+q.tier;                          // más baches si es difícil
+  const nb=(LEVEL<=1?1:2)+q.tier;             // más baches si es difícil (menos en nivel 1)
   for(let i=0;i<nb;i++)bumps.push({wy:rnd(220,metaDist-120),off:rnd(-roadHalf+40,roadHalf-40),hit:false});
-  drive={W,H,roadHalf,speed,metaDist,carScreenY,dist:0,carX:W/2,vx:0,car,q,bumps,
+  drive={W,H,roadHalf,speed,metaDist,curve,carScreenY,dist:0,carX:W/2,vx:0,car,q,bumps,
     shake:0,over:false,img:carImage(car.id),last:null,steerMax:300*car.grip,startT:null,countdown:1.4};
   $('#drvQn').textContent='🏁 '+(race.i+1)+'/'+QN;
   $('#drvPay').textContent='🪙 +'+q.pay;
