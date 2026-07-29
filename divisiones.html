@@ -114,6 +114,21 @@
     text-shadow:0 0 16px #000,0 0 30px var(--orange);}
   .ctrlNote{position:fixed;bottom:6px;left:0;right:0;z-index:6;text-align:center;font-family:var(--arcade);font-size:8px;color:#cbd6e6;pointer-events:none;opacity:.85;}
 
+  /* Deslizador-pistola (nivel 2) */
+  #shootBar{position:fixed;left:0;right:0;bottom:0;z-index:8;display:none;flex-direction:column;align-items:center;
+    gap:4px;padding:8px 12px 12px;
+    background:linear-gradient(180deg,rgba(10,12,18,0),rgba(10,12,18,.5) 42%,rgba(10,12,18,.85));}
+  #shootBar .sbLabel{font-family:var(--arcade);font-size:8px;color:#bfe9ff;text-shadow:0 0 6px #000;letter-spacing:1px;}
+  #shootTrack{position:relative;width:100%;max-width:520px;height:56px;border-radius:16px;touch-action:none;overflow:hidden;
+    background:linear-gradient(180deg,#2a3140,#161b24);border:2px solid #3a4964;box-shadow:inset 0 2px 8px rgba(0,0,0,.55);}
+  #shootTrack::before{content:"";position:absolute;top:50%;left:10px;right:10px;height:3px;transform:translateY(-50%);
+    background:repeating-linear-gradient(90deg,rgba(79,224,255,.25) 0 10px,transparent 10px 22px);}
+  #shootHandle{position:absolute;top:5px;left:0;width:58px;height:44px;border-radius:12px;pointer-events:none;
+    display:flex;align-items:center;justify-content:center;font-size:26px;
+    background:linear-gradient(180deg,#ffb454,#ff6a00);box-shadow:0 3px 0 #7a3200,0 0 12px rgba(255,106,0,.5);}
+  #scDrive.lvl2 .steer{width:26%;height:24%;bottom:92px;font-size:28px;opacity:.42;padding-bottom:8px;}
+  #scDrive.lvl2 #ctrlNote{bottom:80px;}
+
   /* Resultado */
   .stars{font-size:44px;letter-spacing:6px;margin:6px 0;}
   .bigearn{font-family:var(--title);font-weight:900;font-size:clamp(30px,10vw,54px);color:var(--yellow);text-shadow:0 0 14px var(--orange);}
@@ -184,11 +199,12 @@
   <h1>HOT WHEELS</h1>
   <p class="tag" id="menuGreet">PILOTO: DANTE</p>
   <div class="panel center">
-    <button class="btn" id="goPlay">🏁 CARRERA</button>
+    <button class="btn" id="goPlay1">🏁 NIVEL 1 · FÁCIL</button>
+    <button class="btn green mt" id="goPlay2">🦖 NIVEL 2 · DINOS</button>
     <button class="btn blue mt" id="goGarage">🔧 GARAJE</button>
     <button class="btn grey mt" id="goHist">📈 HISTORIAL</button>
   </div>
-  <p class="rline mt2">Acierta la división ➜ conduce sin salirte ➜ ¡gana dinero!</p>
+  <p class="rline mt2">NIVEL 2: divisiones más difíciles + ¡dispara a los dinos y recoge sus monedas! 🦖🪙</p>
 </div>
 
 <div id="scGarage" class="screen">
@@ -236,6 +252,10 @@
   <div class="steer" id="steerR">▶</div>
   <div class="bigmsg" id="bigMsg" style="display:none"></div>
   <div class="ctrlNote" id="ctrlNote">Inclina el móvil para girar</div>
+  <div id="shootBar">
+    <div class="sbLabel">◀ DESLIZA PARA APUNTAR · TOCA PARA DISPARAR 🔫 ▶</div>
+    <div id="shootTrack"><div id="shootHandle">🔫</div></div>
+  </div>
 </div>
 
 <div id="scResult" class="screen">
@@ -279,6 +299,9 @@ const sndVroom=()=>sweep(120,420,.5,'sawtooth',.18);
 const sndCrash=()=>{sweep(400,60,.4,'sawtooth',.25);beep(80,.3,'square',.2);};
 const sndMeta =()=>{[523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.13,'square',.2),i*90));};
 const sndCoin =()=>{beep(880,.06,'square',.15);setTimeout(()=>beep(1320,.08,'square',.15),70);};
+const sndLaser=()=>{beep(1250,.05,'square',.12);sweep(720,1500,.08,'square',.1);};
+const sndHit  =()=>beep(300,.06,'square',.18);
+const sndRoar =()=>{sweep(200,60,.34,'sawtooth',.22);beep(70,.28,'square',.16);};
 
 /* ---------- Fondo: líneas de velocidad ---------- */
 (function(){
@@ -433,7 +456,11 @@ function makeDivision(){
   if(LEVEL<=1){                                // NIVEL 1: fácil (divisores sencillos, cociente pequeño)
     d=[2,2,3,4,5,5,10][rnd(0,6)];
     q=rnd(2,9);
-  }else{                                       // niveles siguientes: incluye "grandes" tipo 110/5
+  }else if(LEVEL===2){                          // NIVEL 2: un escalón más (tablas del 6 y 7, cocientes algo mayores)
+    d=[2,3,4,5,6,6,7,7,8][rnd(0,8)];
+    if(Math.random()<0.30) q=rnd(10,12);        // de vez en cuando uno más grandecito
+    else                   q=rnd(2,9);
+  }else{                                        // niveles siguientes: incluye "grandes" tipo 110/5
     d=rnd(2,9);
     if(Math.random()<0.40) q=rnd(11,Math.min(25,Math.floor(150/d)));
     else                   q=rnd(2,12);
@@ -525,6 +552,36 @@ function bindSteer(el,dir){
 bindSteer($('#steerL'),-1);bindSteer($('#steerR'),1);
 addEventListener('keydown',e=>{if(e.key==='ArrowLeft')steer=-1;else if(e.key==='ArrowRight')steer=1;});
 addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight')steer=0;});
+// disparo con teclado (pruebas en ordenador)
+addEventListener('keydown',e=>{if((e.key===' '||e.key==='ArrowUp')&&drive&&drive.level>=2){e.preventDefault();fireBullet();}});
+
+/* ---------- Deslizador-pistola: arrastrar = apuntar · tocar = disparar ---------- */
+(function(){
+  const bar=$('#shootTrack'),handle=$('#shootHandle');if(!bar)return;
+  const AIM_MAX=0.92;
+  let downX=0,downT=0,startAim=0,moved=false,active=false;
+  function setHandle(){ if(!drive)return;
+    const tw=bar.clientWidth-handle.offsetWidth;
+    handle.style.left=((drive.aim/AIM_MAX)*0.5+0.5)*tw+'px'; }
+  window._setShootHandle=setHandle;
+  const px=e=>e.touches&&e.touches[0]?e.touches[0].clientX:e.clientX;
+  function down(e){ if(!drive||drive.level<2)return; active=true;moved=false;
+    downX=px(e);downT=Date.now();startAim=drive.aim;e.preventDefault(); }
+  function move(e){ if(!active||!drive)return;
+    const dx=px(e)-downX; if(Math.abs(dx)>9)moved=true;
+    drive.aim=clamp(startAim+dx/bar.clientWidth*(2*AIM_MAX),-AIM_MAX,AIM_MAX);
+    setHandle();e.preventDefault(); }
+  function up(e){ if(!active)return; active=false;
+    if(!moved && Date.now()-downT<300) fireBullet();
+    if(e&&e.cancelable)e.preventDefault(); }
+  bar.addEventListener('touchstart',down,{passive:false});
+  bar.addEventListener('touchmove',move,{passive:false});
+  bar.addEventListener('touchend',up,{passive:false});
+  bar.addEventListener('touchcancel',up);
+  bar.addEventListener('mousedown',down);
+  addEventListener('mousemove',move);
+  addEventListener('mouseup',up);
+})();
 
 /* ---------- Motor de conducción (canvas cenital) ---------- */
 let drive=null;
@@ -540,30 +597,69 @@ function roadCenter(worldY,d){ // centro de la carretera (px) según la distanci
   let c=d.W/2 + Math.sin(worldY*0.0042)*amp + Math.sin(worldY*0.0015+1.3)*amp*0.55;
   return clamp(c,d.roadHalf+8,d.W-d.roadHalf-8);
 }
+// y en pantalla de un objeto que está en la posición 'wy' del mundo
+function objScreenY(d,wy){ return d.carScreenY-(wy-(d.dist+(d.H-d.carScreenY))); }
+
+/* ---------- Dinosaurios (nivel 2) ---------- */
+const DINO_TYPES={
+  small: {hp:1,w:34,h:32,rHit:21,adv:4, sway:6,  swaySpd:0.010,color:'#5ad84a',dark:'#2e7a24'},
+  raptor:{hp:2,w:42,h:46,rHit:25,adv:24,sway:30, swaySpd:0.011,color:'#ff9a3c',dark:'#a5591a'},
+  trex:  {hp:3,w:58,h:64,rHit:33,adv:9, sway:12, swaySpd:0.006,color:'#c0392b',dark:'#6e1b13'},
+  boa:   {hp:5,w:46,h:118,rHit:31,adv:28,sway:78, swaySpd:0.014,color:'#8e44ff',dark:'#3d1d7a'},
+};
+function spawnDinos(d,q){
+  const dinos=[];
+  const count=4+q.tier;                         // 5..9 bichos según lo dura que sea la división
+  const gap=(d.metaDist-420)/count;
+  let boaDone=false;
+  for(let i=0;i<count;i++){
+    const wy=340+i*gap+rnd(-40,40);
+    let type; const r=Math.random();
+    if(!boaDone && i>=2 && (q.tier>=4 ? r<0.5 : r<0.16)){ type='boa'; boaDone=true; }
+    else if(r<0.46) type='small';
+    else if(r<0.80) type='raptor';
+    else            type='trex';
+    const t=DINO_TYPES[type];
+    dinos.push({type,wy,off:rnd(-d.roadHalf+36,d.roadHalf-36),hp:t.hp,maxHp:t.hp,
+      w:t.w,h:t.h,rHit:t.rHit,adv:t.adv,sway:t.sway,swaySpd:t.swaySpd,
+      color:t.color,dark:t.dark,phase:rnd(0,628)/100,dead:false,gone:false,flash:0});
+  }
+  return dinos;
+}
+function dinoScreenX(d,k){ return roadCenter(k.wy,d)+k.off+Math.sin(d.dist*k.swaySpd+k.phase)*k.sway; }
 function startDrive(q){
   const car=carById(equipped());
   const W=trackCv.width=innerWidth,H=trackCv.height=innerHeight;
   const roadHalf=Math.min(W*0.30,168);
   const speed=235*car.speed;                 // px/seg
-  const driveSecs=LEVEL<=1?15.6:5.2;          // NIVEL 1: carreras el triple de largas
-  const curve=LEVEL<=1?0.6:1;                 // NIVEL 1: curvas más suaves
+  const driveSecs=LEVEL<=1?15.6:(LEVEL===2?12:5.2); // NIVEL 1: largas · NIVEL 2: media (hay dinos)
+  const curve=LEVEL<=1?0.6:(LEVEL===2?0.82:1);      // curvas: suaves → medias → duras
   const metaDist=speed*driveSecs;
   const carScreenY=H-150;
   const bumps=[];
-  const nb=(LEVEL<=1?1:2)+q.tier;             // más baches si es difícil (menos en nivel 1)
+  const nb=LEVEL>=2 ? 1+Math.min(2,q.tier) : (LEVEL<=1?1:2)+q.tier; // en nivel 2 pocos baches (mandan los dinos)
   for(let i=0;i<nb;i++)bumps.push({wy:rnd(220,metaDist-120),off:rnd(-roadHalf+40,roadHalf-40),hit:false});
   drive={W,H,roadHalf,speed,metaDist,curve,carScreenY,dist:0,carX:W/2,vx:0,car,q,bumps,
-    shake:0,over:false,img:carImage(car.id),last:null,steerMax:300*car.grip,startT:null,countdown:1.4};
+    shake:0,over:false,img:carImage(car.id),last:null,steerMax:300*car.grip,startT:null,countdown:1.4,
+    level:LEVEL,bullets:[],dinos:[],coins:[],aim:0,coinsGot:0};
+  if(LEVEL>=2)drive.dinos=spawnDinos(drive,q);
+  const lvl2=LEVEL>=2;
+  $('#scDrive').classList.toggle('lvl2',lvl2);
+  $('#shootBar').style.display=lvl2?'flex':'none';
+  if(lvl2&&window._setShootHandle)window._setShootHandle();
   $('#drvQn').textContent='🏁 '+(race.i+1)+'/'+QN;
   $('#drvPay').textContent='🪙 +'+q.pay;
   $('#metaBar').style.width='0%';
-  $('#ctrlNote').textContent = tilt.on ? 'Inclina el móvil ↔  (o usa ◀ ▶)' : 'Usa ◀ ▶ para girar';
-  const bm=$('#bigMsg');bm.style.display='flex';bm.textContent='3';
+  $('#ctrlNote').textContent = lvl2
+    ? (tilt.on?'Inclina para girar · desliza 👍 y toca para 🔫':'◀▶ giran · desliza 👍 y toca para 🔫')
+    : (tilt.on ? 'Inclina el móvil ↔  (o usa ◀ ▶)' : 'Usa ◀ ▶ para girar');
+  const bm=$('#bigMsg');bm.style.color='';bm.style.display='flex';bm.textContent='3';
   show('#scDrive');
   drive.anim=requestAnimationFrame(driveLoop);
 }
 function driveCleanup(){ if(drive){ if(drive.anim)cancelAnimationFrame(drive.anim); } drive=null; steer=0;
-  const bm=$('#bigMsg');if(bm)bm.style.display='none';}
+  const bm=$('#bigMsg');if(bm)bm.style.display='none';
+  const sb=$('#shootBar');if(sb)sb.style.display='none';}
 
 function driveLoop(ts){
   const d=drive; if(!d)return;
@@ -601,6 +697,43 @@ function driveLoop(ts){
     }
   }
   if(d.shake>0)d.shake=Math.max(0,d.shake-dt*40);
+
+  // ----- Nivel 2: disparos, dinosaurios y monedas -----
+  if(d.level>=2){
+    // balas avanzan
+    for(const b of d.bullets){ b.x+=b.vx*dt; b.y+=b.vy*dt; b.life+=dt; }
+    // dinos avanzan hacia el coche + parpadeo de impacto
+    for(const k of d.dinos){ if(k.dead)continue; k.wy-=k.adv*dt; if(k.flash>0)k.flash-=dt; }
+    // colisiones bala ↔ dino
+    for(const k of d.dinos){ if(k.dead)continue;
+      const ky=objScreenY(d,k.wy), kx=dinoScreenX(d,k), rr=(k.rHit+6)*(k.rHit+6);
+      for(const b of d.bullets){ if(b.gone)continue;
+        const dx=b.x-kx, dy=b.y-ky;
+        if(dx*dx+dy*dy<rr){ b.gone=true; k.hp--; k.flash=0.16; sndHit();
+          if(k.hp<=0){ k.dead=true; sndRoar();
+            for(let m=0;m<k.maxHp;m++)                 // suelta tantas monedas como vidas (tipo Mario)
+              d.coins.push({wy:k.wy+rnd(-16,16),off:clamp(k.off+rnd(-28,28),-d.roadHalf+20,d.roadHalf-20),taken:false,born:d.dist});
+          }
+        }
+      }
+    }
+    // limpiar balas fuera de pantalla o ya impactadas
+    d.bullets=d.bullets.filter(b=>!b.gone && b.y>-30 && b.x>-30 && b.x<d.W+30 && b.life<2.5);
+    // recoger monedas del suelo
+    for(const co of d.coins){ if(co.taken)continue;
+      const cy=objScreenY(d,co.wy), cx=roadCenter(co.wy,d)+co.off;
+      if(Math.abs(cy-d.carScreenY)<34 && Math.abs(cx-d.carX)<32){
+        co.taken=true; race.earned++; d.coinsGot++; walletAdd(1); refreshCoins(); sndCoin();
+        $('#drvPay').textContent='🪙 +'+(d.q.pay+d.coinsGot);
+      }
+    }
+    // ¿un dino toca el coche? → pierdes las monedas de esta división
+    for(const k of d.dinos){ if(k.dead||k.gone)continue;
+      const ky=objScreenY(d,k.wy), kx=dinoScreenX(d,k);
+      if(ky>d.carScreenY+56){ k.gone=true; continue; }        // ya pasó de largo (esquivado)
+      if(ky>d.carScreenY-42 && Math.abs(kx-d.carX)<k.rHit+16){ d.over=true; return dinoHit(); }
+    }
+  }
 
   // ¿fuera de la carretera?
   const cen=roadCenter(carWorldY,d);
@@ -655,6 +788,22 @@ function drawTrack(d,frozen){
     c.fillStyle='#1a1a1e';c.beginPath();c.ellipse(bx,sy2,20,11,0,0,7);c.fill();
     c.fillStyle='#0a0a0c';c.beginPath();c.ellipse(bx,sy2,12,6,0,0,7);c.fill();
   }
+  // monedas del suelo + dinosaurios (nivel 2)
+  if(d.level>=2){
+    for(const co of d.coins){ if(co.taken)continue;
+      const sy=objScreenY(d,co.wy); if(sy<-20||sy>H+20)continue;
+      const sx=roadCenter(co.wy,d)+co.off, bob=Math.sin((d.dist-co.born)*0.05)*2;
+      c.fillStyle='rgba(0,0,0,.35)';c.beginPath();c.ellipse(sx,sy+8,10,4,0,0,7);c.fill();
+      c.fillStyle='#ffe11f';c.strokeStyle='#a5820a';c.lineWidth=2;
+      c.beginPath();c.arc(sx,sy+bob,9,0,7);c.fill();c.stroke();
+      c.fillStyle='#a5820a';c.font='bold 12px monospace';c.textAlign='center';c.textBaseline='middle';
+      c.fillText('$',sx,sy+bob+1);
+    }
+    for(const k of d.dinos){ if(k.dead)continue;
+      const sy=objScreenY(d,k.wy); if(sy<-80||sy>H+80)continue;
+      drawDino(c,k,dinoScreenX(d,k),sy);
+    }
+  }
   // meta (cuadros)
   if(d.metaDist-d.dist < H){
     const my=d.carScreenY-(d.metaDist-(d.dist+(d.H-d.carScreenY)));
@@ -669,6 +818,17 @@ function drawTrack(d,frozen){
   if(img.complete&&img.naturalWidth){c.drawImage(img,-w/2,-h/2,w,h);}
   else{c.fillStyle=d.car.id==='utilitario'?'#d64b3a':'#ffdf22';c.fillRect(-w/2,-h/2,w,h);}
   c.restore();
+  // balas + guía de puntería (nivel 2)
+  if(d.level>=2){
+    for(const b of d.bullets){
+      c.save();c.fillStyle='#4fe0ff';c.shadowColor='#4fe0ff';c.shadowBlur=8;
+      c.beginPath();c.ellipse(b.x,b.y,3.5,7,Math.atan2(b.vx,-b.vy),0,7);c.fill();c.restore();
+    }
+    const ang=d.aim,fx=d.carX,fy=d.carScreenY-40,len=Math.min(H,560);
+    c.save();c.setLineDash([9,12]);c.lineWidth=3;c.strokeStyle='rgba(79,224,255,.5)';
+    c.beginPath();c.moveTo(fx,fy);c.lineTo(fx+Math.sin(ang)*len,fy-Math.cos(ang)*len);c.stroke();
+    c.setLineDash([]);c.fillStyle='rgba(255,225,31,.95)';c.beginPath();c.arc(fx,fy,4,0,7);c.fill();c.restore();
+  }
   c.restore();
 }
 
@@ -686,6 +846,63 @@ function crashOut(){
   sndCrash();drive.shake=16;drawTrack(drive,true);
   const bm=$('#bigMsg');bm.style.display='flex';bm.style.color='var(--red)';bm.textContent='💥';
   setTimeout(()=>{bm.style.display='none';bm.style.color='';race.i++;nextQuestion();},1150);
+}
+function dinoHit(){                              // un dino te alcanza → sin monedas de esta división
+  cancelAnimationFrame(drive.anim);
+  sndCrash();drive.shake=18;drawTrack(drive,true);
+  const bm=$('#bigMsg');bm.style.display='flex';bm.style.color='var(--red)';bm.textContent='🦖💥';
+  setTimeout(()=>{bm.style.display='none';bm.style.color='';race.i++;nextQuestion();},1250);
+}
+
+/* ---------- Disparo ---------- */
+let lastShot=0;
+function fireBullet(){
+  const d=drive; if(!d||d.over||d.countdown>0||d.level<2)return;
+  const now=Date.now(); if(now-lastShot<110)return; lastShot=now;
+  const ang=d.aim,sp=820;
+  d.bullets.push({x:d.carX,y:d.carScreenY-38,vx:Math.sin(ang)*sp,vy:-Math.cos(ang)*sp,life:0});
+  sndLaser();
+}
+
+/* ---------- Dibujo de un dinosaurio (cenital, arcade) ---------- */
+function drawDino(c,k,x,y){
+  const col=k.color,dk=k.dark;
+  c.save();c.translate(x,y);
+  c.fillStyle='rgba(0,0,0,.28)';c.beginPath();c.ellipse(0,k.h*0.32,k.w*0.5,k.h*0.15,0,0,7);c.fill();
+  if(k.type==='boa'){                           // TITANOBOA: serpiente segmentada (cabeza abajo)
+    const segs=7,segH=k.h/segs;
+    for(let i=segs-1;i>=0;i--){
+      const yy=-k.h/2+i*segH+segH/2, wob=Math.sin(i*0.9+k.phase*3)*9, r=Math.max(6,13-i*0.7);
+      c.fillStyle=i%2?col:dk;c.beginPath();c.arc(wob,yy,r,0,7);c.fill();
+    }
+    c.fillStyle=col;c.beginPath();c.arc(0,k.h/2-6,15,0,7);c.fill();
+    c.fillStyle='#fff';c.beginPath();c.arc(-6,k.h/2-9,3,0,7);c.arc(6,k.h/2-9,3,0,7);c.fill();
+    c.fillStyle='#000';c.beginPath();c.arc(-6,k.h/2-9,1.5,0,7);c.arc(6,k.h/2-9,1.5,0,7);c.fill();
+    c.fillStyle='#fff';
+    c.beginPath();c.moveTo(-4,k.h/2+4);c.lineTo(-1,k.h/2+11);c.lineTo(-7,k.h/2+6);c.closePath();c.fill();
+    c.beginPath();c.moveTo(4,k.h/2+4);c.lineTo(1,k.h/2+11);c.lineTo(7,k.h/2+6);c.closePath();c.fill();
+  }else{
+    const w=k.w,h=k.h,hy=h*0.42;
+    c.fillStyle=dk;c.beginPath();c.moveTo(-6,-h/2);c.lineTo(6,-h/2);c.lineTo(0,-h/2-14);c.closePath();c.fill(); // cola
+    c.fillStyle=col;c.beginPath();c.ellipse(0,0,w*0.42,h*0.42,0,0,7);c.fill();                                 // cuerpo
+    c.fillStyle=dk;                                                                                            // patas
+    c.beginPath();c.ellipse(-w*0.42,h*0.05,6,10,0.5,0,7);c.fill();
+    c.beginPath();c.ellipse(w*0.42,h*0.05,6,10,-0.5,0,7);c.fill();
+    c.fillStyle=col;c.beginPath();c.ellipse(0,hy,w*0.30,h*0.20,0,0,7);c.fill();                                // cabeza
+    c.fillStyle='#fff';c.beginPath();c.arc(-w*0.14,hy-2,3.2,0,7);c.arc(w*0.14,hy-2,3.2,0,7);c.fill();
+    c.fillStyle='#000';c.beginPath();c.arc(-w*0.14,hy-2,1.6,0,7);c.arc(w*0.14,hy-2,1.6,0,7);c.fill();
+    c.fillStyle='#3a0a0a';c.beginPath();c.ellipse(0,hy+h*0.13,w*0.16,4,0,0,7);c.fill();
+    if(k.type==='trex'){ c.fillStyle='#fff';
+      for(let i=-2;i<=2;i++){c.beginPath();c.moveTo(i*5-2,hy+h*0.10);c.lineTo(i*5,hy+h*0.17);c.lineTo(i*5+2,hy+h*0.10);c.closePath();c.fill();}
+    }
+  }
+  if(k.flash>0){c.globalAlpha=Math.min(1,k.flash*5);c.fillStyle='#fff';
+    c.beginPath();c.ellipse(0,0,k.w*0.5,k.h*0.5,0,0,7);c.fill();c.globalAlpha=1;}
+  c.restore();
+  if(k.maxHp>1){                                 // barra de vidas encima
+    const pw=8,gap=3,tot=k.maxHp*pw+(k.maxHp-1)*gap,x0=x-tot/2,yy=y-k.h/2-14;
+    for(let i=0;i<k.maxHp;i++){c.fillStyle=i<k.hp?'#5ad84a':'#3a3f47';c.fillRect(x0+i*(pw+gap),yy,pw,5);}
+  }
 }
 
 /* ---------- Fin de carrera ---------- */
@@ -762,7 +979,8 @@ async function doEnter(){
   goMenu();
 }
 function goMenu(){$('#menuGreet').textContent='PILOTO: '+((currentName()||'').toUpperCase());refreshCoins();show('#scMenu');}
-$('#goPlay').onclick =()=>{ac();startRace();};
+$('#goPlay1').onclick=()=>{ac();LEVEL=1;startRace();};
+$('#goPlay2').onclick=()=>{ac();LEVEL=2;startRace();};
 $('#goGarage').onclick=()=>{ac();renderGarage();show('#scGarage');};
 $('#goHist').onclick  =()=>{ac();renderHist();show('#scHist');};
 $('#garHome').onclick =()=>goMenu();
