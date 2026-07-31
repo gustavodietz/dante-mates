@@ -43,6 +43,7 @@
   .btn.blue{background:linear-gradient(180deg,#66b6ff,#2b7bff);box-shadow:0 6px 0 #123a7a;color:#03122e;}
   .btn.grey{background:linear-gradient(180deg,#9aa4b2,#5b6472);box-shadow:0 6px 0 #2b323c;color:#0a0e14;}
   .btn.green{background:linear-gradient(180deg,#8bf07a,#3caf2a);box-shadow:0 6px 0 #1a6b12;color:#06210a;}
+  .btn.red{background:linear-gradient(180deg,#ff7a6a,#e5322f);box-shadow:0 6px 0 #7a1400;color:#fff;}
   .btn:disabled{filter:grayscale(.7) brightness(.7);box-shadow:0 6px 0 #2b323c;cursor:not-allowed;}
   .row{display:flex;gap:10px;width:100%;max-width:520px;}
   .row .btn{width:auto;flex:1;}
@@ -201,10 +202,11 @@
   <div class="panel center">
     <button class="btn" id="goPlay1">🏁 NIVEL 1 · FÁCIL</button>
     <button class="btn green mt" id="goPlay2">🦖 NIVEL 2 · DINOS</button>
+    <button class="btn red mt" id="goPlay3">🌋 NIVEL 3 · LA RUTA</button>
     <button class="btn blue mt" id="goGarage">🔧 GARAJE</button>
     <button class="btn grey mt" id="goHist">📈 HISTORIAL</button>
   </div>
-  <p class="rline mt2">NIVEL 2: divisiones más difíciles + ¡dispara a los dinos y recoge sus monedas! 🦖🪙</p>
+  <p class="rline mt2">NIVEL 3: ¡la RUTA de 20 pasos hasta la meta! Aciertas → bichejo fácil. Fallas → monstruo con muchas vidas. Si te pilla, retrocedes un paso. 🌋👹</p>
 </div>
 
 <div id="scGarage" class="screen">
@@ -387,6 +389,46 @@ const CAR_SVG={
     <rect x="8" y="86" width="44" height="10" rx="3" fill="#101318"/>
     <circle cx="30" cy="44" r="6" fill="#101318"/>
     <ellipse cx="30" cy="34" rx="5" ry="8" fill="#3ad0ff"/></svg>`,
+  // 11 · Neón nocturno (cyberpunk)
+  neon:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">${wheels()}
+    <rect x="11" y="6" width="38" height="88" rx="12" fill="#0a0f1e" stroke="#00f0ff" stroke-width="2.5"/>
+    <rect x="14" y="9" width="32" height="82" rx="10" fill="none" stroke="#ff2bd6" stroke-width="1.5" opacity=".9"/>
+    <path d="M17 24 h26 l-3 15 h-20 z" fill="#00f0ff" opacity=".85"/>
+    <rect x="18" y="52" width="24" height="18" rx="4" fill="#12203a"/>
+    <rect x="14" y="74" width="32" height="4" fill="#ff2bd6"/>
+    <rect x="14" y="18" width="32" height="3" fill="#00f0ff"/></svg>`,
+  // 12 · Murciélago (batmóvil)
+  bat:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">${wheels()}
+    <path d="M30 4 C42 12 44 32 43 56 C42 74 40 92 30 96 C20 92 18 74 17 56 C16 32 18 12 30 4 Z" fill="#14151a" stroke="#000" stroke-width="2"/>
+    <path d="M8 86 q10 -14 22 -6 q12 -8 22 6 l-6 8 q-8 -8 -16 -2 q-8 -6 -16 2 z" fill="#101014"/>
+    <path d="M18 26 h24 l-3 14 h-18 z" fill="#4a4f5c" opacity=".9"/>
+    <rect x="26" y="8" width="8" height="70" fill="#2a2d36"/>
+    <path d="M22 58 q3 -5 8 -2 q5 -3 8 2 q-3 4 -8 3 q-5 1 -8 -3 z" fill="#ffd21f"/></svg>`,
+
+  // 13 · Cohete (car-cohete con propulsores)
+  cohete:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">${wheels()}
+    <path d="M30 2 C40 10 42 30 41 58 C40 80 38 92 30 94 C22 92 20 80 19 58 C18 30 20 10 30 2 Z" fill="#eceff5" stroke="#b02020" stroke-width="2"/>
+    <path d="M30 2 C34 8 35 22 35 40 h-10 C25 22 26 8 30 2 Z" fill="#e5322f"/>
+    <path d="M20 30 h20 l-2 14 h-16 z" fill="#3ad0ff" opacity=".9"/>
+    <rect x="20" y="94" width="8" height="10" rx="3" fill="#333"/><rect x="32" y="94" width="8" height="10" rx="3" fill="#333"/>
+    <path d="M20 104 q4 12 4 0 z" fill="#ff8a00"/><path d="M36 104 q4 12 4 0 z" fill="#ff8a00"/>
+    <path d="M22 104 q2 8 2 0 z" fill="#ffe11f"/><path d="M38 104 q2 8 2 0 z" fill="#ffe11f"/></svg>`,
+  // 14 · Dragón (coche-dragón con alas)
+  drake:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">${wheels()}
+    <path d="M6 40 q-4 8 4 12 l14 2 -2 -14 z" fill="#1f8a3a"/><path d="M54 40 q4 8 -4 12 l-14 2 2 -14 z" fill="#1f8a3a"/>
+    <rect x="12" y="8" width="36" height="84" rx="14" fill="#2ecc40" stroke="#0f5a1e" stroke-width="2"/>
+    <path d="M27 8 l3 -6 3 6 z M25 20 l5 -7 5 7 z" fill="#e5322f"/>
+    <path d="M17 24 h26 l-3 15 h-20 z" fill="#c9ffe0" opacity=".9"/>
+    <path d="M20 54 h20 l-4 8 h-12 z M22 66 h16 l-3 8 h-10 z" fill="#0f7a2a"/>
+    <circle cx="22" cy="16" r="2.5" fill="#ffe11f"/><circle cx="38" cy="16" r="2.5" fill="#ffe11f"/></svg>`,
+  // 15 · Súper Oro (hypercar dorado)
+  oro:`<svg viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">${wheels()}
+    <path d="M30 3 C49 10 51 34 49 60 C47 84 40 96 30 97 C20 96 13 84 11 60 C9 34 11 10 30 3 Z" fill="#ffd21f" stroke="#8a6a00" stroke-width="2"/>
+    <path d="M30 3 C40 10 41 30 41 55 C41 78 37 92 30 96 C30 60 30 30 30 3 Z" fill="#fff6c0" opacity=".7"/>
+    <path d="M17 26 h26 l-3 16 h-20 z" fill="#3a2a00" opacity=".92"/>
+    <path d="M13 52 l34 0 -5 42 -24 0 z" fill="#ffb800" opacity=".85"/>
+    <rect x="8" y="88" width="44" height="8" rx="3" fill="#8a6a00"/>
+    <rect x="26" y="8" width="8" height="72" fill="#fff6c0" opacity=".8"/></svg>`,
 };
 const CARS=[
   {id:'utilitario', name:'UTILITARIO',   price:0,    grip:1.00, speed:1.00},
@@ -399,6 +441,11 @@ const CARS=[
   {id:'rally',      name:'RALLY',         price:1700, grip:1.34, speed:1.26},
   {id:'gt',         name:'GT COMPETICIÓN',price:2300, grip:1.38, speed:1.34},
   {id:'f1',         name:'FÓRMULA 1',     price:3200, grip:1.45, speed:1.45},
+  {id:'neon',       name:'NEÓN NOCTURNO', price:4300, grip:1.48, speed:1.50},
+  {id:'bat',        name:'MURCIÉLAGO',    price:5600, grip:1.54, speed:1.52},
+  {id:'cohete',     name:'COHETE',        price:7200, grip:1.52, speed:1.66},
+  {id:'drake',      name:'DRAGÓN',        price:9000, grip:1.62, speed:1.60},
+  {id:'oro',        name:'SÚPER ORO',     price:12000,grip:1.70, speed:1.72},
 ];
 const carById=id=>CARS.find(c=>c.id===id)||CARS[0];
 
@@ -460,10 +507,10 @@ function makeDivision(){
     d=[2,3,4,5,6,6,7,7,8][rnd(0,8)];
     if(Math.random()<0.30) q=rnd(10,12);        // de vez en cuando uno más grandecito
     else                   q=rnd(2,9);
-  }else{                                        // niveles siguientes: incluye "grandes" tipo 110/5
-    d=rnd(2,9);
-    if(Math.random()<0.40) q=rnd(11,Math.min(25,Math.floor(150/d)));
-    else                   q=rnd(2,12);
+  }else{                                        // NIVEL 3: un punto más duro que el 2 (divisores grandes, cocientes altos)
+    d=[3,4,6,6,7,7,8,8,9,9][rnd(0,9)];          // casi siempre tablas difíciles
+    if(Math.random()<0.45) q=rnd(11,Math.min(20,Math.floor(180/d))); // dividendos grandes tipo 144/8
+    else                   q=rnd(4,12);
   }
   const n=d*q;                                // dividendo (exacto)
   // dificultad 1..5 según tamaño del dividendo y del divisor
@@ -480,11 +527,30 @@ const QN=8;   // preguntas por carrera
 let race=null, buf='';
 
 function startRace(){ac();sndVroom();
-  race={i:0,correct:0,earned:0,metas:0};
+  race={i:0,correct:0,earned:0,metas:0,step:0,falls:0,journey:LEVEL>=3};
   ensureTilt();          // pide permiso de giroscopio dentro del gesto del usuario
   nextQuestion();}
 
+/* Nivel 3: un solo monstruo que persigue. Fácil (1 vida) si acertó, jefe (6 vidas) si falló */
+function spawnJourneyMonster(d,kind){
+  const boss=kind==='hard', t=boss?DINO_TYPES.boss:DINO_TYPES.small;
+  const wy=d.metaDist*(boss?0.5:0.62)+150;
+  const hp=boss?6:1, adv=boss?100:44;
+  return [{type:boss?'boss':'small',wy,off:rnd(-d.roadHalf+40,d.roadHalf-40),
+    hp,maxHp:hp,w:t.w,h:t.h,rHit:t.rHit,adv,sway:t.sway,swaySpd:t.swaySpd,
+    color:t.color,dark:t.dark,phase:rnd(0,628)/100,dead:false,gone:false,flash:0}];
+}
+
 function nextQuestion(){
+  if(race.journey){
+    if(race.step>=JOURNEY_STEPS){endRace();return;}
+    race.q=makeDivision();buf='';race.i++;
+    $('#qMeta').textContent=`NV3 · PASO ${race.step+1}/${JOURNEY_STEPS} · 🪙 ${race.earned}`;
+    $('#qTxt').innerHTML=`${race.q.n} <span class="op">÷</span> ${race.q.d}`;
+    $('#qAns').textContent='_';
+    $('#qFb').innerHTML='&nbsp;';$('#qFb').className='feedback';
+    show('#scAsk');return;
+  }
   if(race.i>=QN){endRace();return;}
   race.q=makeDivision();buf='';
   $('#qMeta').textContent=`NV${LEVEL} · PREGUNTA ${race.i+1}/${QN} · 🪙 ${race.earned}`;
@@ -505,15 +571,17 @@ function submitAns(){
   if(val===race.q.q){
     race.correct++;
     const p=loadProg();p.correct=(p.correct||0)+1;saveProg(p);
-    $('#qFb').textContent='¡BIEN! ▶ ACELERA';$('#qFb').className='feedback ok';
+    $('#qFb').textContent=race.journey?'¡BIEN! ▶ un bichejo fácil':'¡BIEN! ▶ ACELERA';$('#qFb').className='feedback ok';
     sndCorrect();
-    setTimeout(()=>startDrive(race.q),650);
+    setTimeout(()=>startDrive(race.q,race.journey?'easy':null),650);
   }else{
     const p=loadProg();p.wrong=(p.wrong||0)+1;saveProg(p);
-    $('#qFb').innerHTML=`${race.q.n} ÷ ${race.q.d} = <b>${race.q.q}</b>`;$('#qFb').className='feedback no';
+    $('#qFb').innerHTML=`${race.q.n} ÷ ${race.q.d} = <b>${race.q.q}</b>`+(race.journey?' · ¡MONSTRUO! 👹':'');
+    $('#qFb').className='feedback no';
     sndWrong();
     race.results=race.results||[];
-    setTimeout(()=>{race.i++;nextQuestion();},1500);
+    if(race.journey){ setTimeout(()=>startDrive(race.q,'hard'),1600); }
+    else{ setTimeout(()=>{race.i++;nextQuestion();},1500); }
   }
 }
 function buildKeypad(){
@@ -606,7 +674,65 @@ const DINO_TYPES={
   raptor:{hp:2,w:42,h:46,rHit:25,adv:24,sway:30, swaySpd:0.011,color:'#ff9a3c',dark:'#a5591a'},
   trex:  {hp:3,w:58,h:64,rHit:33,adv:9, sway:12, swaySpd:0.006,color:'#c0392b',dark:'#6e1b13'},
   boa:   {hp:5,w:46,h:118,rHit:31,adv:28,sway:78, swaySpd:0.014,color:'#8e44ff',dark:'#3d1d7a'},
+  boss:  {hp:6,w:74,h:82, rHit:42,adv:95,sway:22, swaySpd:0.007,color:'#b02a8f',dark:'#5a0f47'},
 };
+
+/* ---------- Nivel 3: temas de escenario (cambian en cada paso) ---------- */
+const JOURNEY_STEPS=20;
+const THEMES=[
+  {name:'BOSQUE',   g0:'#1c4a23',g1:'#0f2e15',deco:'trees'},
+  {name:'MAR',      g0:'#0e6a80',g1:'#053040',deco:'sea'},
+  {name:'DESIERTO', g0:'#c9a24a',g1:'#7a5a1e',deco:'cactus'},
+  {name:'NIEVE',    g0:'#d3e7f2',g1:'#87abc0',deco:'snow'},
+  {name:'VOLCÁN',   g0:'#3a2018',g1:'#170a07',deco:'lava'},
+  {name:'CIUDAD',   g0:'#2b303c',g1:'#12151d',deco:'city'},
+];
+function drawDecoItem(c,x,y,kind){
+  c.save();c.translate(x,y);
+  if(kind==='trees'){
+    c.fillStyle='#5a3a1e';c.fillRect(-3,4,6,12);
+    c.fillStyle='#1e7a2e';c.beginPath();c.moveTo(-13,6);c.lineTo(13,6);c.lineTo(0,-20);c.closePath();c.fill();
+    c.fillStyle='#2ecc40';c.beginPath();c.moveTo(-10,-2);c.lineTo(10,-2);c.lineTo(0,-24);c.closePath();c.fill();
+  }else if(kind==='sea'){
+    c.strokeStyle='rgba(255,255,255,.55)';c.lineWidth=3;
+    c.beginPath();c.arc(0,0,11,3.5,6.0);c.stroke();
+    c.beginPath();c.arc(0,12,8,3.5,6.0);c.stroke();
+  }else if(kind==='cactus'){
+    c.fillStyle='#2e8b3a';
+    c.fillRect(-4,-16,8,32);                     // tronco
+    c.fillRect(-12,-4,8,4);c.fillRect(-12,-4,4,14); // brazo izq
+    c.fillRect(4,-9,8,4);c.fillRect(8,-9,4,18);     // brazo der
+  }else if(kind==='snow'){
+    c.fillStyle='#eef6fb';c.beginPath();c.arc(0,8,13,3.14,6.28);c.fill();
+    c.fillStyle='#2a5a3a';c.beginPath();c.moveTo(-9,6);c.lineTo(9,6);c.lineTo(0,-14);c.closePath();c.fill();
+    c.fillStyle='#fff';c.beginPath();c.moveTo(-5,-2);c.lineTo(5,-2);c.lineTo(0,-14);c.closePath();c.fill();
+  }else if(kind==='lava'){
+    c.fillStyle='#241210';c.beginPath();c.ellipse(0,4,14,10,0,0,7);c.fill();
+    c.fillStyle='#ff5a00';c.beginPath();c.ellipse(0,4,8,5,0,0,7);c.fill();
+    c.fillStyle='#ffd21f';c.beginPath();c.ellipse(0,4,4,2.5,0,0,7);c.fill();
+  }else if(kind==='city'){
+    c.fillStyle='#1a1f2b';c.fillRect(-12,-24,24,42);
+    c.fillStyle='#ffe11f';for(let i=0;i<3;i++)for(let j=0;j<4;j++){if((i+j)%2)c.fillRect(-8+i*7,-20+j*9,4,5);}
+  }
+  c.restore();
+}
+function drawGround(c,d,W,H){
+  const th=d.theme;
+  const g0=th?th.g0:'#1c4a23',g1=th?th.g1:'#0f2e15';
+  const gg=c.createLinearGradient(0,0,0,H);gg.addColorStop(0,g0);gg.addColorStop(1,g1);
+  c.fillStyle=gg;c.fillRect(-20,-20,W+40,H+40);
+  if(!th){                                       // clásico (niveles 1 y 2): rayas de velocidad
+    c.fillStyle='rgba(255,255,255,.05)';
+    const gy=(d.dist*0.6)%60;
+    for(let y=-60+gy;y<H;y+=60){c.fillRect(0,y,26,30);c.fillRect(W-26,y,26,30);}
+    return;
+  }
+  const SP=118,off=(d.dist*0.85)%SP;             // decorados laterales que se desplazan
+  for(let y=-SP+off;y<H+SP;y+=SP){
+    drawDecoItem(c,24,y,th.deco);
+    drawDecoItem(c,W-24,y,th.deco);
+  }
+}
 function spawnDinos(d,q){
   const dinos=[];
   const count=4+q.tier;                         // 5..9 bichos según lo dura que sea la división
@@ -627,27 +753,30 @@ function spawnDinos(d,q){
   return dinos;
 }
 function dinoScreenX(d,k){ return roadCenter(k.wy,d)+k.off+Math.sin(d.dist*k.swaySpd+k.phase)*k.sway; }
-function startDrive(q){
+function startDrive(q,monster){
   const car=carById(equipped());
+  const journey=race.journey;
   const W=trackCv.width=innerWidth,H=trackCv.height=innerHeight;
   const roadHalf=Math.min(W*0.30,168);
   const speed=235*car.speed;                 // px/seg
-  const driveSecs=LEVEL<=1?15.6:(LEVEL===2?12:5.2); // NIVEL 1: largas · NIVEL 2: media (hay dinos)
-  const curve=LEVEL<=1?0.6:(LEVEL===2?0.82:1);      // curvas: suaves → medias → duras
+  const driveSecs=journey?5.0:(LEVEL<=1?15.6:(LEVEL===2?12:5.2)); // NIVEL 1: largas · NIVEL 2: media · ruta: tramos cortos
+  const curve=journey?0.7:(LEVEL<=1?0.6:(LEVEL===2?0.82:1));      // curvas suaves en la ruta (manda el monstruo)
   const metaDist=speed*driveSecs;
   const carScreenY=H-150;
   const bumps=[];
-  const nb=LEVEL>=2 ? 1+Math.min(2,q.tier) : (LEVEL<=1?1:2)+q.tier; // en nivel 2 pocos baches (mandan los dinos)
+  const nb=journey?0:(LEVEL>=2 ? 1+Math.min(2,q.tier) : (LEVEL<=1?1:2)+q.tier); // en la ruta no hay baches
   for(let i=0;i<nb;i++)bumps.push({wy:rnd(220,metaDist-120),off:rnd(-roadHalf+40,roadHalf-40),hit:false});
   drive={W,H,roadHalf,speed,metaDist,curve,carScreenY,dist:0,carX:W/2,vx:0,car,q,bumps,
-    shake:0,over:false,img:carImage(car.id),last:null,steerMax:300*car.grip,startT:null,countdown:1.4,
-    level:LEVEL,bullets:[],dinos:[],coins:[],aim:0,coinsGot:0};
-  if(LEVEL>=2)drive.dinos=spawnDinos(drive,q);
+    shake:0,over:false,img:carImage(car.id),last:null,steerMax:300*car.grip,startT:null,countdown:journey?0.9:1.4,
+    level:LEVEL,bullets:[],dinos:[],coins:[],aim:0,coinsGot:0,
+    journey,monsterKind:monster,theme:journey?THEMES[race.step%THEMES.length]:null};
+  if(journey)drive.dinos=spawnJourneyMonster(drive,monster);
+  else if(LEVEL>=2)drive.dinos=spawnDinos(drive,q);
   const lvl2=LEVEL>=2;
   $('#scDrive').classList.toggle('lvl2',lvl2);
   $('#shootBar').style.display=lvl2?'flex':'none';
   if(lvl2&&window._setShootHandle)window._setShootHandle();
-  $('#drvQn').textContent='🏁 '+(race.i+1)+'/'+QN;
+  $('#drvQn').textContent=journey?('🌋 '+drive.theme.name+' '+(race.step+1)+'/'+JOURNEY_STEPS):('🏁 '+(race.i+1)+'/'+QN);
   $('#drvPay').textContent='🪙 +'+q.pay;
   $('#metaBar').style.width='0%';
   $('#ctrlNote').textContent = lvl2
@@ -743,7 +872,8 @@ function driveLoop(ts){
   // ¿meta?
   if(d.dist>=d.metaDist && !d.over){ d.over=true; return metaReached(); }
 
-  $('#metaBar').style.width=clamp(d.dist/d.metaDist*100,0,100)+'%';
+  const frac=clamp(d.dist/d.metaDist,0,1);
+  $('#metaBar').style.width=(d.journey?(race.step+frac)/JOURNEY_STEPS*100:frac*100)+'%';
   drawTrack(d,false);
   d.anim=requestAnimationFrame(driveLoop);
 }
@@ -752,13 +882,8 @@ function drawTrack(d,frozen){
   const c=tctx,W=d.W,H=d.H;
   let sx=0,sy=0; if(d.shake>0){sx=(Math.random()-.5)*d.shake;sy=(Math.random()-.5)*d.shake;}
   c.save();c.translate(sx,sy);
-  // césped
-  const gg=c.createLinearGradient(0,0,0,H);gg.addColorStop(0,'#1c4a23');gg.addColorStop(1,'#0f2e15');
-  c.fillStyle=gg;c.fillRect(-20,-20,W+40,H+40);
-  // rayas laterales de césped (velocidad)
-  c.fillStyle='rgba(255,255,255,.05)';
-  const gy=(d.dist*0.6)%60;
-  for(let y=-60+gy;y<H;y+=60){c.fillRect(0,y,26,30);c.fillRect(W-26,y,26,30);}
+  // suelo + decorados (tema del paso en nivel 3; clásico en 1 y 2)
+  drawGround(c,d,W,H);
 
   // carretera (polígono por franjas)
   const step=8;const left=[],right=[];
@@ -834,6 +959,7 @@ function drawTrack(d,frozen){
 
 function metaReached(){
   cancelAnimationFrame(drive.anim);
+  if(drive.journey)return journeyAdvance();
   race.earned+=drive.q.pay; race.metas++;
   walletAdd(drive.q.pay); refreshCoins();
   sndMeta();sndCoin();
@@ -845,13 +971,33 @@ function crashOut(){
   cancelAnimationFrame(drive.anim);
   sndCrash();drive.shake=16;drawTrack(drive,true);
   const bm=$('#bigMsg');bm.style.display='flex';bm.style.color='var(--red)';bm.textContent='💥';
+  if(drive.journey){ setTimeout(()=>{bm.style.display='none';bm.style.color='';nextQuestion();},1150); return; }
   setTimeout(()=>{bm.style.display='none';bm.style.color='';race.i++;nextQuestion();},1150);
 }
-function dinoHit(){                              // un dino te alcanza → sin monedas de esta división
+function dinoHit(){                              // un dino/monstruo te alcanza
   cancelAnimationFrame(drive.anim);
   sndCrash();drive.shake=18;drawTrack(drive,true);
-  const bm=$('#bigMsg');bm.style.display='flex';bm.style.color='var(--red)';bm.textContent='🦖💥';
+  const bm=$('#bigMsg');bm.style.display='flex';bm.style.color='var(--red)';
+  bm.textContent=drive.journey?'👹💥':'🦖💥';
+  if(drive.journey)return journeyBack();
   setTimeout(()=>{bm.style.display='none';bm.style.color='';race.i++;nextQuestion();},1250);
+}
+/* ---------- Nivel 3: avanzar / retroceder en la ruta de 20 pasos ---------- */
+function journeyAdvance(){
+  race.step++; race.earned+=drive.q.pay; race.metas++;
+  walletAdd(drive.q.pay); refreshCoins(); sndMeta(); sndCoin();
+  const bm=$('#bigMsg');bm.style.display='flex';bm.style.color='';
+  bm.textContent=race.step>=JOURNEY_STEPS?'🏁 ¡META!':'PASO '+race.step+' ✓';
+  $('#drvPay').textContent='🪙 +'+drive.q.pay;
+  setTimeout(()=>{bm.style.display='none';nextQuestion();},1050);
+}
+function journeyBack(){
+  race.falls++; race.step=Math.max(0,race.step-1);
+  const bm=$('#bigMsg');bm.style.display='flex';bm.style.color='var(--red)';
+  setTimeout(()=>{
+    bm.textContent='🔙 PASO '+(race.step+1);
+    setTimeout(()=>{bm.style.display='none';bm.style.color='';nextQuestion();},900);
+  },650);
 }
 
 /* ---------- Disparo ---------- */
@@ -910,15 +1056,22 @@ function endRace(){
   const p=loadProg();p.races=(p.races||0)+1;
   p.best=Math.max(p.best||0,race.earned);
   p.bestDist=Math.max(p.bestDist||0,race.metas);
-  const stars = race.correct>=7?3 : race.correct>=5?2 : race.correct>=3?1 : 0;
+  const total=race.journey?(race.i||1):QN;
+  const stars = race.journey
+    ? ((race.falls||0)===0?3 : (race.falls||0)<=3?2 : 1)
+    : (race.correct>=7?3 : race.correct>=5?2 : race.correct>=3?1 : 0);
   const entry={id:Date.now(),date:new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'}),
-    ok:race.correct,total:QN,metas:race.metas,earned:race.earned,car:equipped(),stars};
+    ok:race.correct,total,metas:race.metas,earned:race.earned,car:equipped(),stars};
   p.history=[entry,...(p.history||[])].slice(0,20);
   saveProg(p);cloudPush();refreshCoins();
-  $('#resTitle').textContent = stars>=3?'¡CAMPEÓN!' : stars>=1?'¡BUENA CARRERA!' : '¡SIGUE PRACTICANDO!';
+  $('#resTitle').textContent = race.journey
+    ? (stars>=3?'¡RUTA PERFECTA!' : '¡LLEGASTE A LA META!')
+    : (stars>=3?'¡CAMPEÓN!' : stars>=1?'¡BUENA CARRERA!' : '¡SIGUE PRACTICANDO!');
   $('#resStars').textContent = stars>0?'★'.repeat(stars)+'☆'.repeat(3-stars):'☆☆☆';
   $('#resEarn').textContent = '🪙 +'+race.earned;
-  $('#resDetail').innerHTML = `ACIERTOS: ${race.correct}/${QN}<br>METAS: ${race.metas}/${race.correct||0}<br>CARTERA: 🪙 ${wallet()}`;
+  $('#resDetail').innerHTML = race.journey
+    ? `RUTA: ${JOURNEY_STEPS}/${JOURNEY_STEPS} PASOS<br>CAÍDAS: ${race.falls||0}<br>CARTERA: 🪙 ${wallet()}`
+    : `ACIERTOS: ${race.correct}/${QN}<br>METAS: ${race.metas}/${race.correct||0}<br>CARTERA: 🪙 ${wallet()}`;
   if(stars>0)sndMeta();
   show('#scResult');
 }
@@ -981,6 +1134,7 @@ async function doEnter(){
 function goMenu(){$('#menuGreet').textContent='PILOTO: '+((currentName()||'').toUpperCase());refreshCoins();show('#scMenu');}
 $('#goPlay1').onclick=()=>{ac();LEVEL=1;startRace();};
 $('#goPlay2').onclick=()=>{ac();LEVEL=2;startRace();};
+$('#goPlay3').onclick=()=>{ac();LEVEL=3;startRace();};
 $('#goGarage').onclick=()=>{ac();renderGarage();show('#scGarage');};
 $('#goHist').onclick  =()=>{ac();renderHist();show('#scHist');};
 $('#garHome').onclick =()=>goMenu();
