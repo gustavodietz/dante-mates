@@ -461,13 +461,21 @@ const currentName=()=>loadStore().current;
 function enterProfile(name){name=(name||'').trim();if(!name)return false;
   const s=loadStore();if(!s.profiles[name])s.profiles[name]=blankGar();s.current=name;saveStore(s);return true;}
 
-/* cartera / coches */
-const wallet=()=>loadProg().credits;
-function walletAdd(n){const p=loadProg();p.credits=Math.max(0,(p.credits||0)+n);saveProg(p);cloudPush();return p.credits;}
+/* cartera COMPARTIDA entre los 4 juegos (bote global de monedas) */
+const WKEY='dante_wallet_v1';
+function loadWallet(){try{return JSON.parse(localStorage.getItem(WKEY))||{coins:0,imported:{}};}catch(e){return{coins:0,imported:{}};}}
+function saveWallet(w){try{localStorage.setItem(WKEY,JSON.stringify(w));}catch(e){}}
+/* la primera vez, vuelca el saldo antiguo de ESTE juego al bote común (una sola vez) */
+(function importLegacy(){const w=loadWallet();w.imported=w.imported||{};if(w.imported[SKEY])return;
+  let old=0;const s=loadStore();for(const k in s.profiles){old+=(s.profiles[k].credits||0);}
+  w.coins=Math.max(0,(w.coins||0)+old);w.imported[SKEY]=true;saveWallet(w);})();
+const wallet=()=>loadWallet().coins||0;
+function walletAdd(n){const w=loadWallet();w.coins=Math.max(0,(w.coins||0)+n);saveWallet(w);return w.coins;}
 const owns=id=>id==='utilitario'||!!(loadProg().cars||{})[id];
 const equipped=()=>loadProg().car||'utilitario';
-function buyCar(id){const c=carById(id),p=loadProg();if(owns(id)||(p.credits||0)<c.price)return false;
-  p.credits-=c.price;p.cars=p.cars||{};p.cars[id]=true;p.car=id;saveProg(p);cloudPush();return true;}
+function buyCar(id){const c=carById(id);if(owns(id)||wallet()<c.price)return false;
+  const w=loadWallet();w.coins-=c.price;saveWallet(w);
+  const p=loadProg();p.cars=p.cars||{};p.cars[id]=true;p.car=id;saveProg(p);cloudPush();return true;}
 function equipCar(id){if(!owns(id))return false;const p=loadProg();p.car=id;saveProg(p);cloudPush();return true;}
 
 /* ☁️ sincronización */

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>La Torre de la Ballesta · Mates de Dante</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{--gold:#ffd23c;--amber:#ff9e2c;--wood:#7a4a25;--wood-d:#4a2c14;--stone:#7d8896;
+    --parch:#f3e2ba;--green:#7bd63f;--red:#ff3b30;--blue:#2e6fb0;
+    --arcade:"Press Start 2P","Courier New",monospace;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;overflow:hidden;}
+  body{font-family:'Trebuchet MS',system-ui,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;
+    background:linear-gradient(180deg,#0a0716 0%,#1a1030 40%,#2a1a3c 70%,#3a2418 100%);}
+  canvas#bg{position:fixed;inset:0;z-index:0;display:block;}
+  #crt{position:fixed;inset:0;z-index:60;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.13) 3px,rgba(0,0,0,0) 4px),
+      radial-gradient(ellipse at center,transparent 56%,rgba(0,0,0,.55) 100%);mix-blend-mode:multiply;opacity:.6;}
+
+  .screen{position:fixed;inset:0;z-index:2;display:none;flex-direction:column;align-items:center;justify-content:center;
+    padding:16px;text-align:center;}
+  .screen.active{display:flex;}
+
+  h1{font-family:var(--arcade);font-size:clamp(15px,5vw,30px);color:var(--gold);line-height:1.5;margin:0 0 6px;
+    text-shadow:0 0 8px #ff8a00,0 0 18px rgba(255,210,60,.5),3px 3px 0 #5a2400;}
+  .sub{font-family:var(--arcade);color:var(--amber);font-size:clamp(8px,2.6vw,12px);margin:0 0 18px;
+    text-shadow:0 0 8px rgba(255,158,44,.6);line-height:1.6;}
+
+  .btn{font-family:var(--arcade);font-size:clamp(11px,3vw,15px);color:#2a1400;cursor:pointer;border:none;
+    padding:14px 20px;border-radius:12px;background:linear-gradient(180deg,#ffe27a,#ff9e2c);
+    box-shadow:0 5px 0 #7a3e00;transition:transform .08s,box-shadow .08s;}
+  .btn:active{transform:translateY(4px);box-shadow:0 1px 0 #7a3e00;}
+  .btn.lvl{width:min(88vw,380px);padding:18px;margin:7px 0;display:flex;flex-direction:column;gap:6px;align-items:center;}
+  .btn.lvl small{font-size:9px;color:#5a2e00;line-height:1.5;}
+  .btn.ghost{background:rgba(0,0,0,.35);color:var(--gold);box-shadow:0 4px 0 #2a1a10;border:2px solid #6a4a2a;}
+  .btn.ghost:active{box-shadow:0 1px 0 #2a1a10;}
+
+  .coinHud{font-family:var(--arcade);color:var(--gold);font-size:clamp(11px,3vw,15px);
+    text-shadow:0 0 10px rgba(255,210,60,.6);margin:6px 0;}
+
+  /* --- Entrada de nombre --- */
+  #nameIn{font-family:var(--arcade);font-size:16px;text-align:center;padding:14px;border-radius:12px;border:3px solid var(--wood);
+    background:#1c1226;color:var(--gold);width:min(80vw,340px);text-transform:uppercase;}
+  #nameIn:focus{outline:none;border-color:var(--gold);}
+
+  /* --- Pantalla de operación --- */
+  .askCard{width:min(94vw,560px);background:linear-gradient(180deg,rgba(30,18,38,.92),rgba(18,10,26,.94));
+    border:3px solid var(--wood);border-radius:20px;padding:18px 16px 20px;
+    box-shadow:0 0 0 2px #2a1810,0 12px 30px rgba(0,0,0,.5);}
+  .tmerBar{height:16px;border-radius:10px;background:#22141c;border:2px solid #3a2418;overflow:hidden;margin:2px 0 4px;}
+  .tmerFill{height:100%;width:100%;border-radius:8px;background:linear-gradient(90deg,#7bd63f,#ffd23c);transition:width .1s linear;}
+  .tmerFill.warn{background:linear-gradient(90deg,#ff9e2c,#ff3b30);}
+  .tmerTxt{font-family:var(--arcade);font-size:11px;color:var(--amber);}
+  .qmeta{font-family:var(--arcade);font-size:10px;color:var(--stone);margin:8px 0 2px;letter-spacing:1px;}
+  .qtxt{font-family:var(--arcade);font-size:clamp(26px,9vw,52px);color:#fff;margin:6px 0;text-shadow:0 0 14px rgba(255,210,60,.35);}
+  .qtxt .op{color:var(--amber);}
+  .qans{font-family:var(--arcade);font-size:clamp(26px,9vw,48px);color:var(--gold);min-height:1.2em;
+    text-shadow:0 0 12px var(--gold);letter-spacing:3px;}
+  .qfb{font-family:var(--arcade);font-size:12px;min-height:16px;margin:4px 0 8px;}
+  .qfb.ok{color:var(--green);} .qfb.no{color:var(--red);}
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:340px;margin:6px auto 0;}
+  .key{font-family:var(--arcade);font-size:18px;padding:14px 0;border-radius:12px;cursor:pointer;color:#2a1400;
+    background:linear-gradient(180deg,#f3e2ba,#c9a86a);box-shadow:0 4px 0 #6a4a2a;}
+  .key:active{transform:translateY(3px);box-shadow:0 1px 0 #6a4a2a;}
+  .key.act{background:linear-gradient(180deg,#ffe27a,#ff9e2c);box-shadow:0 4px 0 #7a3e00;}
+  .key.del{background:linear-gradient(180deg,#f2a48a,#d85a3a);color:#fff;box-shadow:0 4px 0 #7a2a12;}
+
+  /* --- Pantalla de tiro --- */
+  #scShoot{padding:0;}
+  #range{position:absolute;inset:0;z-index:1;display:block;touch-action:none;cursor:none;}
+  .shootHud{position:absolute;top:0;left:0;right:0;z-index:3;display:flex;justify-content:space-between;align-items:flex-start;
+    padding:10px 12px;pointer-events:none;}
+  .shootHud .chip{font-family:var(--arcade);font-size:11px;background:rgba(10,6,16,.7);border:2px solid #4a2c14;border-radius:10px;
+    padding:8px 10px;color:var(--gold);text-shadow:0 0 8px rgba(255,210,60,.5);}
+  .shootHud .chip.lvl2t{color:var(--amber);}
+  #shootTip{position:absolute;bottom:14px;left:0;right:0;z-index:3;text-align:center;pointer-events:none;
+    font-family:var(--arcade);font-size:11px;color:var(--parch);text-shadow:0 2px 4px #000;opacity:.9;}
+  #shootQuit{position:absolute;top:10px;right:12px;z-index:4;}
+
+  /* --- Resultado --- */
+  .stars{font-size:38px;margin:6px 0;letter-spacing:6px;}
+  .resline{font-family:var(--arcade);font-size:12px;color:var(--parch);line-height:2;margin:6px 0 14px;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+  .foot{position:fixed;bottom:6px;left:0;right:0;z-index:3;text-align:center;font-family:var(--arcade);
+    font-size:8px;color:#9a86b8;opacity:.7;pointer-events:none;}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<!-- NOMBRE -->
+<div class="screen active" id="scName">
+  <h1>LA TORRE DE<br>LA BALLESTA</h1>
+  <p class="sub">⚔️ RESUELVE · APUNTA · DISPARA ⚔️</p>
+  <p class="sub" style="color:var(--parch)">¿QUIÉN ERES, ARQUERO?</p>
+  <input id="nameIn" maxlength="12" placeholder="TU NOMBRE" autocomplete="off">
+  <div style="height:14px"></div>
+  <button class="btn" id="nameGo">▶ ENTRAR</button>
+</div>
+
+<!-- MENÚ -->
+<div class="screen" id="scMenu">
+  <h1>LA TORRE DE<br>LA BALLESTA</h1>
+  <div class="coinHud" id="menuCoin">🪙 0</div>
+  <p class="sub" id="menuGreet" style="color:var(--parch)">ARQUERO</p>
+  <button class="btn lvl" data-lvl="1">
+    NIVEL 1 · APRENDIZ
+    <small>Operaciones fáciles · 30s para pensar<br>La diana no tiene prisa 🎯</small>
+  </button>
+  <button class="btn lvl" data-lvl="2">
+    NIVEL 2 · MAESTRO
+    <small>50s para pensar Y disparar<br>¡El tiempo no se detiene! ⏳</small>
+  </button>
+  <div style="height:10px"></div>
+  <div class="row">
+    <button class="btn ghost" id="toGames">🎮 OTROS JUEGOS</button>
+    <button class="btn ghost" id="chName">👤 CAMBIAR</button>
+  </div>
+</div>
+
+<!-- OPERACIÓN -->
+<div class="screen" id="scAsk">
+  <div class="askCard">
+    <div class="tmerTxt" id="tmerTxt">⏳ 30</div>
+    <div class="tmerBar"><div class="tmerFill" id="tmerFill"></div></div>
+    <div class="qmeta" id="qMeta">NIVEL 1</div>
+    <div class="qtxt" id="qTxt">3 + 4</div>
+    <div class="qans" id="qAns">_</div>
+    <div class="qfb" id="qFb">&nbsp;</div>
+    <div class="pad" id="pad"></div>
+  </div>
+  <div style="height:12px"></div>
+  <button class="btn ghost" id="askQuit">✕ SALIR</button>
+</div>
+
+<!-- TIRO -->
+<div class="screen" id="scShoot">
+  <canvas id="range"></canvas>
+  <div class="shootHud">
+    <div class="chip" id="shootCoins">🪙 0</div>
+    <div class="chip" id="shootProg">🎯 1/5</div>
+    <div class="chip lvl2t" id="shootTime" style="display:none">⏳ 50</div>
+  </div>
+  <button class="btn ghost" id="shootQuit">✕</button>
+  <div id="shootTip">MUEVE PARA APUNTAR · TOCA PARA DISPARAR</div>
+</div>
+
+<!-- RESULTADO -->
+<div class="screen" id="scResult">
+  <h1 id="resTitle">¡RONDA!</h1>
+  <div class="stars" id="resStars">⭐⭐⭐</div>
+  <div class="resline" id="resLine"></div>
+  <div class="coinHud" id="resCoin">🪙 0</div>
+  <div style="height:12px"></div>
+  <div class="row">
+    <button class="btn" id="resAgain">🔁 OTRA VEZ</button>
+    <button class="btn ghost" id="resMenu">🏰 TORRE</button>
+  </div>
+</div>
+
+<div id="crt"></div>
+<div class="foot">HECHO CON ❤️ PARA DANTE</div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* ================= AUDIO ================= */
+let audioOn=true, actx=null;
+function ac(){ if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+  if(actx&&actx.state==='suspended'){try{actx.resume();}catch(e){}} return actx; }
+function beep(f,d,t='square',v=.2){ if(!audioOn)return; const c=ac(); if(!c)return;
+  const o=c.createOscillator(),g=c.createGain(); o.type=t; o.frequency.value=f; o.connect(g); g.connect(c.destination);
+  g.gain.setValueAtTime(v,c.currentTime); g.gain.exponentialRampToValueAtTime(1e-4,c.currentTime+d);
+  o.start(); o.stop(c.currentTime+d); }
+function sweep(f1,f2,d,t='sawtooth',v=.18){ if(!audioOn)return; const c=ac(); if(!c)return;
+  const o=c.createOscillator(),g=c.createGain(); o.type=t; o.connect(g); g.connect(c.destination);
+  o.frequency.setValueAtTime(f1,c.currentTime); o.frequency.exponentialRampToValueAtTime(f2,c.currentTime+d);
+  g.gain.setValueAtTime(v,c.currentTime); g.gain.exponentialRampToValueAtTime(1e-4,c.currentTime+d);
+  o.start(); o.stop(c.currentTime+d); }
+const sndTap    =()=>beep(560,.05,'square',.13);
+const sndCorrect=()=>{beep(660,.09,'square',.2);setTimeout(()=>beep(990,.12,'square',.2),90);};
+const sndWrong  =()=>sweep(240,90,.3,'sawtooth',.2);
+const sndShoot  =()=>{sweep(150,520,.09,'square',.14);setTimeout(()=>beep(760,.05,'square',.1),40);}; // cuerda de ballesta
+const sndThunk  =()=>{beep(180,.08,'square',.2);setTimeout(()=>beep(120,.1,'square',.16),50);};        // flecha clavada
+const sndCoin   =()=>{beep(880,.06,'square',.15);setTimeout(()=>beep(1320,.08,'square',.15),70);};
+const sndBull   =()=>{[784,988,1175,1568].forEach((f,i)=>setTimeout(()=>beep(f,.12,'square',.2),i*80));};
+const sndTick   =()=>beep(1200,.03,'square',.06);
+const sndTime   =()=>sweep(500,120,.5,'sawtooth',.2);
+
+/* ================= CARTERA COMPARTIDA (los 4 juegos) ================= */
+const WKEY='dante_wallet_v1';
+function loadWallet(){try{return JSON.parse(localStorage.getItem(WKEY))||{coins:0,imported:{}};}catch(e){return{coins:0,imported:{}};}}
+function saveWallet(w){try{localStorage.setItem(WKEY,JSON.stringify(w));}catch(e){}}
+const coins=()=>loadWallet().coins||0;
+function coinsAdd(n){const w=loadWallet();w.coins=Math.max(0,(w.coins||0)+n);saveWallet(w);return w.coins;}
+/* importa una sola vez el saldo antiguo de otro juego (por si el jugador ya tenía monedas allí) */
+function importLegacy(gameKey){const w=loadWallet();w.imported=w.imported||{};if(w.imported[gameKey])return;
+  let old=0;try{const s=JSON.parse(localStorage.getItem(gameKey));if(s&&s.profiles){for(const k in s.profiles){
+    const p=s.profiles[k]||{};old+=(p.credits||0)+((p.hunter&&p.hunter.credits)||0);}}}catch(e){}
+  w.coins=Math.max(0,(w.coins||0)+old);w.imported[gameKey]=true;saveWallet(w);}
+importLegacy('dante_hotwheels_v1');   // Divisiones (coches)
+importLegacy('dante_galaxia_v3');     // Multiplicaciones (naves)
+
+/* ================= PERFIL PROPIO (estadísticas de tiro) ================= */
+const SKEY='dante_ballesta_v1';
+const blankP=()=>({shots:0,hits:0,bull:0,coinsWon:0,rounds:0,best:0});
+const loadStore=()=>{try{return JSON.parse(localStorage.getItem(SKEY))||{current:null,profiles:{}};}catch(e){return{current:null,profiles:{}};}};
+const saveStore=s=>{try{localStorage.setItem(SKEY,JSON.stringify(s));}catch(e){}};
+const loadProg=()=>{const s=loadStore();return Object.assign(blankP(),(s.current&&s.profiles[s.current])||{});};
+const saveProg=p=>{const s=loadStore();if(!s.current)return;s.profiles[s.current]=p;saveStore(s);};
+const currentName=()=>loadStore().current;
+function enterProfile(name){name=(name||'').trim();if(!name)return false;
+  const s=loadStore();if(!s.profiles[name])s.profiles[name]=blankP();s.current=name;saveStore(s);return true;}
+
+/* ================= NAVEGACIÓN ================= */
+function show(id){ if(id!=='#scShoot')stopRange(); $$('.screen').forEach(s=>s.classList.remove('active')); $(id).classList.add('active'); }
+function refreshCoins(){const w='🪙 '+coins();['#menuCoin','#shootCoins','#resCoin'].forEach(s=>{const el=$(s);if(el)el.textContent=w;});}
+
+/* ================= FONDO: brasas medievales ================= */
+(function(){
+  const cv=$('#bg'),ctx=cv.getContext('2d');let W,H,ps=[];
+  function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight;ps=[];
+    for(let i=0;i<90;i++)ps.push({x:Math.random()*W,y:Math.random()*H,z:Math.random()*1.6+.4,
+      s:Math.random()*2+.6,ph:Math.random()*6,hue:Math.random()<.6?'#ff9e2c':'#ffd23c'});}
+  addEventListener('resize',resize);resize();
+  (function loop(){ctx.clearRect(0,0,W,H);
+    for(const p of ps){p.y-=p.z*.35;p.ph+=.04;p.x+=Math.sin(p.ph)*.4;
+      if(p.y<-4){p.y=H+4;p.x=Math.random()*W;}
+      ctx.globalAlpha=.25+.35*(0.6+0.4*Math.sin(p.ph));ctx.fillStyle=p.hue;
+      ctx.fillRect(p.x,p.y,p.s,p.s);}
+    ctx.globalAlpha=1;requestAnimationFrame(loop);})();
+})();
+
+/* ================= GENERADOR DE OPERACIONES ================= */
+function makeQ(level){
+  const kinds = level===1 ? ['sum','mul','div'] : ['sum','mul','div','mul2'];
+  const k = kinds[rnd(0,kinds.length-1)];
+  if(k==='sum'){ const a=rnd(level===1?2:6, level===1?12:35), b=rnd(level===1?2:6, level===1?12:35);
+    return {txt:`${a} <span class="op">+</span> ${b}`, ans:a+b}; }
+  if(k==='mul'){ const a=rnd(2, level===1?6:9), b=rnd(2, level===1?9:12);
+    return {txt:`${a} <span class="op">×</span> ${b}`, ans:a*b}; }
+  if(k==='div'){ const d=rnd(2, level===1?5:9), q=rnd(2,9);
+    return {txt:`${d*q} <span class="op">÷</span> ${d}`, ans:q}; }
+  // mul2 (solo nivel 2): a×b + c
+  const a=rnd(2,6), b=rnd(2,6), c=rnd(2,12);
+  return {txt:`${a} <span class="op">×</span> ${b} <span class="op">+</span> ${c}`, ans:a*b+c};
+}
+
+/* ================= ESTADO DE RONDA ================= */
+const L1_TARGETS=5, L2_TARGETS=6, T1=30, T2=50;
+let game=null, buf='', tmer=null;
+
+function startRound(level){ ac();
+  game={level, idx:0, total:level===1?L1_TARGETS:L2_TARGETS, coinsRound:0, ringsHit:0, bulls:0, phase:'solve'};
+  nextOp();
+}
+function roundTime(){ return game.level===1?T1:T2; }
+
+/* ---- Temporizador ---- */
+function startTimer(){ stopTimer(); game.timeLeft=roundTime(); paintTimer();
+  tmer=setInterval(()=>{ game.timeLeft=Math.round((game.timeLeft-0.1)*10)/10;
+    if(game.timeLeft<=5.05 && Math.abs(game.timeLeft%1)<0.06) sndTick();
+    paintTimer();
+    if(game.timeLeft<=0){ stopTimer(); onTimeout(); }
+  },100);
+}
+function stopTimer(){ if(tmer){clearInterval(tmer);tmer=null;} }
+function paintTimer(){
+  const tot=roundTime(), t=Math.max(0,game.timeLeft), pct=(t/tot)*100;
+  const secs=Math.ceil(t);
+  const fill=$('#tmerFill'); if(fill){fill.style.width=pct+'%'; fill.classList.toggle('warn',t<=8);}
+  const tt=$('#tmerTxt'); if(tt)tt.textContent='⏳ '+secs;
+  const st=$('#shootTime'); if(st)st.textContent='⏳ '+secs;
+}
+function onTimeout(){
+  sndTime(); game.await=false;
+  if(game.level===1){
+    // Nivel 1: se acabó el tiempo de pensar → se revela y pasa a la siguiente
+    $('#qFb').textContent='⏰ ¡TIEMPO! ERA '+game.q.ans; $('#qFb').className='qfb no';
+    game.idx++; setTimeout(()=>{ if(game.idx>=game.total)endRound(); else nextOp(); },1100);
+  }else{
+    // Nivel 2: se acabó el tiempo → NUEVA operación, reloj otra vez a 50 (no gasta intento)
+    if(game.phase==='shoot'){ stopRange(); }
+    $('#shootTip') && ($('#shootTip').textContent='⏰ ¡TIEMPO! NUEVA OPERACIÓN');
+    setTimeout(()=>nextOp(), 700);
+  }
+}
+
+/* ---- Mostrar operación ---- */
+function nextOp(){
+  game.phase='solve'; buf=''; game.await=false; game.canShoot=false;
+  game.q=makeQ(game.level);
+  $('#qMeta').textContent = game.level===1
+    ? `APRENDIZ · DIANA ${game.idx+1}/${game.total} · 🪙 ${game.coinsRound}`
+    : `MAESTRO · DIANA ${game.idx+1}/${game.total} · 🪙 ${game.coinsRound}`;
+  $('#qTxt').innerHTML=game.q.txt;
+  $('#qAns').textContent='_';
+  $('#qFb').innerHTML='&nbsp;'; $('#qFb').className='qfb';
+  show('#scAsk');
+  startTimer();
+}
+
+/* ---- Teclado numérico ---- */
+function buildPad(){
+  const pad=$('#pad'); pad.innerHTML='';
+  ['1','2','3','4','5','6','7','8','9','⌫','0','✓'].forEach(k=>{
+    const b=document.createElement('div'); b.className='key'+(k==='✓'?' act':k==='⌫'?' del':''); b.textContent=k;
+    b.onclick=()=>press(k); pad.appendChild(b);
+  });
+}
+function press(k){
+  if(k==='⌫'){ buf=buf.slice(0,-1); sndTap(); }
+  else if(k==='✓'){ submit(); return; }
+  else if(buf.length<4){ buf+=k; sndTap(); }
+  $('#qAns').textContent = buf===''?'_':buf;
+}
+function submit(){
+  if(buf==='')return;
+  if(parseInt(buf,10)===game.q.ans){
+    sndCorrect(); $('#qFb').textContent='✔ ¡CORRECTO!'; $('#qFb').className='qfb ok';
+    if(game.level===1) stopTimer();            // Nivel 1: la diana no tiene prisa
+    game.await=true;                           // marca "vamos a disparar esta operación"
+    setTimeout(()=>{ if(game.await) goShoot(); }, 450);
+  }else{
+    sndWrong(); $('#qFb').textContent='✘ CASI... PRUEBA OTRA VEZ'; $('#qFb').className='qfb no';
+    buf=''; $('#qAns').textContent='_';        // sigue el reloj, vuelve a intentar
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(!$('#scAsk').classList.contains('active'))return;
+  if(e.key>='0'&&e.key<='9')press(e.key);
+  else if(e.key==='Backspace')press('⌫');
+  else if(e.key==='Enter')submit();
+});
+
+/* ================= PANTALLA DE TIRO ================= */
+let rangeRAF=null, rangeCtx=null, aim={x:0,y:0}, shot=null, floats=[], rangeStart=0;
+const RINGS=[  // de fuera hacia dentro
+  {f:1.00,c:'#3a3a3a',coins:10},
+  {f:0.80,c:'#f3e2ba',coins:25},
+  {f:0.60,c:'#2e6fb0',coins:50},
+  {f:0.40,c:'#e23b3b',coins:75},
+  {f:0.20,c:'#ffd23c',coins:100},
+];
+function goShoot(){
+  game.phase='shoot'; game.await=false; game.canShoot=true;
+  const showT = game.level===2;
+  $('#shootTime').style.display = showT?'block':'none';
+  $('#shootProg').textContent='🎯 '+(game.idx+1)+'/'+game.total;
+  $('#shootTip').textContent = game.level===2
+    ? 'APUNTA Y DISPARA · ¡EL RELOJ SIGUE!' : 'MUEVE PARA APUNTAR · TOCA PARA DISPARAR';
+  refreshCoins();
+  show('#scShoot');
+  startRange();
+}
+function startRange(){
+  const cv=$('#range'); rangeCtx=cv.getContext('2d');
+  sizeRange(); aim.x=cv.clientWidth/2; aim.y=cv.clientHeight/2; shot=null; floats=[];
+  rangeStart=performance.now();
+  cv.onpointermove=e=>{const r=cv.getBoundingClientRect(); aim.x=e.clientX-r.left; aim.y=e.clientY-r.top;};
+  cv.onpointerdown=e=>{const r=cv.getBoundingClientRect(); aim.x=e.clientX-r.left; aim.y=e.clientY-r.top; fire();};
+  if(!rangeRAF) rangeRAF=requestAnimationFrame(drawRange);
+}
+function stopRange(){ if(rangeRAF){cancelAnimationFrame(rangeRAF);rangeRAF=null;} const cv=$('#range'); if(cv){cv.onpointermove=null;cv.onpointerdown=null;} }
+function sizeRange(){ const cv=$('#range'); const dpr=Math.min(2,window.devicePixelRatio||1);
+  cv.width=cv.clientWidth*dpr; cv.height=cv.clientHeight*dpr; rangeCtx.setTransform(dpr,0,0,dpr,0,0); }
+addEventListener('resize',()=>{ if(rangeRAF)sizeRange(); });
+
+function targetPos(t){ // t en segundos
+  const cv=$('#range'), W=cv.clientWidth, H=cv.clientHeight;
+  const R=targetR();
+  const spd = game.level===2?1.0:0.65;
+  const ampX=(W*0.5-R-20), ampY=(H*0.32);
+  const midX=W/2, midY=H*0.42;
+  return { x: midX+ampX*Math.sin(t*0.9*spd),
+           y: midY+ampY*Math.sin(t*1.4*spd+1.1),
+           R };
+}
+function targetR(){ const cv=$('#range'); const base=Math.min(cv.clientWidth,cv.clientHeight);
+  return base*(game.level===2?0.10:0.13); }
+
+function fire(){
+  if(shot || !game.canShoot) return;   // una flecha en vuelo / tiro ya resuelto
+  const cv=$('#range');
+  shot={ x0:cv.clientWidth/2, y0:cv.clientHeight-24, tx:aim.x, ty:aim.y, t0:performance.now(), dur:340, done:false };
+  sndShoot();
+}
+function resolveShot(){
+  const cv=$('#range'), t=(performance.now()-rangeStart)/1000, tp=targetPos(t);
+  const d=Math.hypot(shot.tx-tp.x, shot.ty-tp.y), rel=d/tp.R;
+  let gained=0, ring=null;
+  for(let i=RINGS.length-1;i>=0;i--){ if(rel<=RINGS[i].f){ ring=RINGS[i]; break; } }
+  if(ring){ gained=ring.coins; }
+  // registrar
+  game.shotFx={x:shot.tx,y:shot.ty,t0:performance.now()};
+  if(gained>0){
+    coinsAdd(gained); game.coinsRound+=gained; game.ringsHit++;
+    if(gained>=100){ game.bulls++; sndBull(); floats.push(mkFloat(shot.tx,shot.ty,'¡DIANA! +'+gained,'#ffd23c')); }
+    else { sndThunk(); setTimeout(sndCoin,120); floats.push(mkFloat(shot.tx,shot.ty,'+'+gained,'#7bd63f')); }
+    // stats
+    const p=loadProg(); p.shots++; p.hits++; if(gained>=100)p.bull++; p.coinsWon+=gained; saveProg(p);
+  }else{
+    sndThunk(); floats.push(mkFloat(shot.tx,shot.ty,'FALLASTE','#ff6a6a'));
+    const p=loadProg(); p.shots++; saveProg(p);
+  }
+  refreshCoins();
+  $('#shootCoins').textContent='🪙 '+coins();
+  $('#shootProg').textContent='🎯 '+(game.idx+1)+'/'+game.total;
+  shot=null; game.canShoot=false;   // no se puede volver a disparar hasta la próxima diana
+  // avanzar
+  game.idx++;
+  const advance=()=>{ if(game.idx>=game.total){ endRound(); }
+    else if(game.level===1){ nextOp(); }        // L1: siguiente operación, temporizador nuevo
+    else { nextOp(); }                            // L2: siguiente operación, reloj nuevo a 50
+  };
+  setTimeout(advance, 950);
+}
+function mkFloat(x,y,txt,col){ return {x,y,txt,col,t0:performance.now()}; }
+
+/* ---- Render del campo de tiro ---- */
+function drawRange(){
+  rangeRAF=requestAnimationFrame(drawRange);
+  const cv=$('#range'), ctx=rangeCtx; if(!ctx)return;
+  const W=cv.clientWidth, H=cv.clientHeight, now=performance.now(), t=(now-rangeStart)/1000;
+
+  // escenario: cielo, muralla, suelo
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#241436'); sky.addColorStop(.55,'#3a2450'); sky.addColorStop(.56,'#4a3320'); sky.addColorStop(1,'#2a1a10');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+  // luna
+  ctx.fillStyle='rgba(255,240,200,.85)'; ctx.beginPath(); ctx.arc(W*0.82,H*0.16,26,0,7); ctx.fill();
+  // almenas de castillo en el horizonte
+  ctx.fillStyle='#1c1220'; const hor=H*0.56, cw=W/14;
+  ctx.fillRect(0,hor,W,H-hor);
+  for(let i=0;i<15;i++){ if(i%2===0) ctx.fillRect(i*cw,hor-16,cw,16); }
+
+  // DIANA
+  const tp=targetPos(t);
+  // poste de madera
+  ctx.fillStyle='#4a2c14'; ctx.fillRect(tp.x-6,tp.y,12,H-tp.y);
+  for(const r of RINGS){ ctx.beginPath(); ctx.arc(tp.x,tp.y,tp.R*r.f,0,7); ctx.fillStyle=r.c; ctx.fill(); }
+  ctx.lineWidth=2; ctx.strokeStyle='rgba(0,0,0,.35)';
+  for(const r of RINGS){ ctx.beginPath(); ctx.arc(tp.x,tp.y,tp.R*r.f,0,7); ctx.stroke(); }
+  ctx.beginPath(); ctx.arc(tp.x,tp.y,tp.R*0.06,0,7); ctx.fillStyle='#7a1400'; ctx.fill();
+
+  // flecha en vuelo
+  if(shot){
+    const p=clamp((now-shot.t0)/shot.dur,0,1), ex=p*p*(3-2*p);
+    const ax=shot.x0+(shot.tx-shot.x0)*ex, ay=shot.y0+(shot.ty-shot.y0)*ex - Math.sin(p*Math.PI)*40;
+    const ang=Math.atan2(shot.ty-shot.y0, shot.tx-shot.x0);
+    drawArrow(ctx,ax,ay,ang,1);
+    if(p>=1 && !shot.done){ shot.done=true; resolveShot(); }
+  }
+  // marca de la última flecha clavada
+  if(game.shotFx && now-game.shotFx.t0<900){ drawArrow(ctx,game.shotFx.x,game.shotFx.y,-1.15,.9); }
+
+  // ballesta abajo + mira
+  drawCrossbow(ctx,W/2,H-16);
+  drawScope(ctx,aim.x,aim.y);
+
+  // floats de monedas
+  floats=floats.filter(f=>now-f.t0<900);
+  for(const f of floats){ const k=(now-f.t0)/900; ctx.globalAlpha=1-k; ctx.fillStyle=f.col;
+    ctx.font='bold 20px "Press Start 2P",monospace'; ctx.textAlign='center';
+    ctx.fillText(f.txt,f.x,f.y-30-k*30); ctx.globalAlpha=1; }
+}
+function drawArrow(ctx,x,y,ang,sc){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang); ctx.scale(sc,sc);
+  ctx.strokeStyle='#c9a86a'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(-34,0); ctx.lineTo(6,0); ctx.stroke();
+  ctx.fillStyle='#e8e8e8'; ctx.beginPath(); ctx.moveTo(6,0); ctx.lineTo(-4,-6); ctx.lineTo(-4,6); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='#ff9e2c'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(-34,0);ctx.lineTo(-40,-5); ctx.moveTo(-34,0);ctx.lineTo(-40,5); ctx.stroke();
+  ctx.restore();
+}
+function drawCrossbow(ctx,x,y){
+  ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle='#5a3418'; ctx.fillRect(-9,-40,18,52);            // culata
+  ctx.strokeStyle='#3a2410'; ctx.lineWidth=8; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-46,-30); ctx.quadraticCurveTo(0,-52,46,-30); ctx.stroke(); // arco
+  ctx.strokeStyle='#d8d8d8'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(-46,-30); ctx.lineTo(46,-30); ctx.stroke(); // cuerda
+  ctx.restore();
+}
+function drawScope(ctx,x,y){
+  ctx.save(); ctx.strokeStyle='rgba(255,210,60,.95)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(x,y,15,0,7); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x,y,26,0,7); ctx.globalAlpha=.4; ctx.stroke(); ctx.globalAlpha=1;
+  ctx.beginPath();
+  ctx.moveTo(x-34,y);ctx.lineTo(x-8,y); ctx.moveTo(x+8,y);ctx.lineTo(x+34,y);
+  ctx.moveTo(x,y-34);ctx.lineTo(x,y-8); ctx.moveTo(x,y+8);ctx.lineTo(x,y+34);
+  ctx.stroke();
+  ctx.fillStyle='rgba(255,59,48,.9)'; ctx.fillRect(x-1.5,y-1.5,3,3);
+  ctx.restore();
+}
+
+/* ================= FIN DE RONDA ================= */
+function endRound(){
+  stopTimer(); stopRange();
+  const p=loadProg(); p.rounds++; if(game.coinsRound>p.best)p.best=game.coinsRound; saveProg(p);
+  const maxHits=game.total;
+  const stars = game.ringsHit>=maxHits ? 3 : game.ringsHit>=Math.ceil(maxHits*0.6) ? 2 : game.ringsHit>=1 ? 1 : 0;
+  $('#resTitle').textContent = stars===3?'¡RONDA PERFECTA!' : stars>=1?'¡BUENA RONDA!' : 'SIGUE ENTRENANDO';
+  $('#resStars').textContent = '⭐'.repeat(stars)+'☆'.repeat(3-stars);
+  $('#resLine').innerHTML = `DIANAS ACERTADAS: ${game.ringsHit}/${maxHits}<br>`+
+    `CENTROS 🎯: ${game.bulls}<br>MONEDAS DE LA RONDA: 🪙 ${game.coinsRound}`;
+  refreshCoins();
+  sndBull();
+  show('#scResult');
+}
+
+/* ================= WIRING ================= */
+buildPad();
+function goMenu(){ $('#menuGreet').textContent='ARQUERO: '+((currentName()||'').toUpperCase()); refreshCoins(); show('#scMenu'); }
+
+$('#nameGo').onclick=()=>{ ac(); const n=$('#nameIn').value; if(enterProfile(n)){sndCorrect();goMenu();} else {$('#nameIn').focus();} };
+$('#nameIn').addEventListener('keydown',e=>{ if(e.key==='Enter')$('#nameGo').click(); });
+
+$$('.btn.lvl').forEach(b=>b.onclick=()=>{ sndTap(); startRound(parseInt(b.dataset.lvl,10)); });
+$('#chName').onclick=()=>{ sndTap(); $('#nameIn').value=currentName()||''; show('#scName'); $('#nameIn').focus(); };
+$('#toGames').onclick=()=>{ location.href='index.html'; };
+
+$('#askQuit').onclick=()=>{ sndTap(); stopTimer(); goMenu(); };
+$('#shootQuit').onclick=()=>{ sndTap(); stopTimer(); stopRange(); goMenu(); };
+$('#resAgain').onclick=()=>{ sndTap(); startRound(game.level); };
+$('#resMenu').onclick=()=>{ sndTap(); goMenu(); };
+
+/* arranque: si ya hay arquero, directo al menú */
+(function boot(){ refreshCoins(); if(currentName()) goMenu(); else { show('#scName'); setTimeout(()=>$('#nameIn').focus(),200); } })();
+</script>
+</body>
+</html>

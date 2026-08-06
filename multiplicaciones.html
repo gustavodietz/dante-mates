@@ -1307,14 +1307,22 @@ const shipById=id=>HSHIPS.find(s=>s.id===id)||HSHIPS[0];
 /* Recompensa según dificultad de la multiplicación: fácil poco, difícil más. */
 function questionPayout(q){ let c=3+Math.round(q.a*q.b/5); if(q.answer!==q.res)c+=4; return c; }
 /* Cartera / naves en el perfil (bajo hunter) */
-function hWallet(){ const H=loadProg().hunter||{}; return H.credits||0; }
+/* Cartera COMPARTIDA entre los 4 juegos (bote global de monedas) */
+const WKEY='dante_wallet_v1';
+function loadWallet(){try{return JSON.parse(localStorage.getItem(WKEY))||{coins:0,imported:{}};}catch(e){return{coins:0,imported:{}};}}
+function saveWallet(w){try{localStorage.setItem(WKEY,JSON.stringify(w));}catch(e){}}
+/* la primera vez, vuelca los créditos antiguos de ESTE juego al bote común (una sola vez) */
+(function importLegacy(){const w=loadWallet();w.imported=w.imported||{};if(w.imported[SKEY])return;
+  let old=0;const s=loadStore();for(const k in s.profiles){const h=(s.profiles[k]||{}).hunter;old+=(h&&h.credits)||0;}
+  w.coins=Math.max(0,(w.coins||0)+old);w.imported[SKEY]=true;saveWallet(w);})();
+function hWallet(){ return loadWallet().coins||0; }
 function hOwns(id){ if(id==='razor')return true; const H=loadProg().hunter||{}; return !!(H.ships&&H.ships[id]); }
 function hEquipped(){ const H=loadProg().hunter||{}; return H.ship||'razor'; }
-function hWalletAdd(n){ const p=loadProg(); const H=p.hunter||(p.hunter={bestLevel:0,levels:{}});
-  H.credits=Math.max(0,(H.credits||0)+n); saveProg(p); cloudPush(); return H.credits; }
-function hBuyShip(id){ const s=shipById(id); const p=loadProg(); const H=p.hunter||(p.hunter={bestLevel:0,levels:{}});
-  if(id==='razor'||hOwns(id)||(H.credits||0)<s.price)return false;
-  H.credits=(H.credits||0)-s.price; H.ships=H.ships||{}; H.ships[id]=true; H.ship=id; saveProg(p); cloudPush(); return true; }
+function hWalletAdd(n){ const w=loadWallet(); w.coins=Math.max(0,(w.coins||0)+n); saveWallet(w); return w.coins; }
+function hBuyShip(id){ const s=shipById(id); if(id==='razor'||hOwns(id)||hWallet()<s.price)return false;
+  const w=loadWallet(); w.coins-=s.price; saveWallet(w);
+  const p=loadProg(); const H=p.hunter||(p.hunter={bestLevel:0,levels:{}});
+  H.ships=H.ships||{}; H.ships[id]=true; H.ship=id; saveProg(p); cloudPush(); return true; }
 function hEquip(id){ if(!hOwns(id))return false; const p=loadProg(); const H=p.hunter||(p.hunter={bestLevel:0,levels:{}});
   H.ship=id; saveProg(p); cloudPush(); return true; }
 
