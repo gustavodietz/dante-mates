@@ -141,6 +141,7 @@
   <canvas id="range"></canvas>
   <div class="shootHud">
     <div class="chip" id="shootCoins">🪙 0</div>
+    <div class="chip" id="shootWind">🌬️ —</div>
     <div class="chip" id="shootProg">🥏 1/5</div>
     <div class="chip lvl2t" id="shootTime" style="display:none">⏳ 50</div>
   </div>
@@ -351,11 +352,30 @@ const PLATOS=[  // rf = radio como fracción del lado menor · w = peso (probabi
 function pickPlato(){ let tot=0; for(const p of PLATOS)tot+=p.w; let r=Math.random()*tot;
   for(const p of PLATOS){ if((r-=p.w)<=0) return p; } return PLATOS[0]; }
 
+/* ---- VIENTO: cambia en cada plato, desvía la saeta ---- */
+function makeWind(){
+  const lvl=game.level;
+  if(Math.random() < (lvl===2?0.10:0.32)) return {dir:0, mag:0};   // a veces calma
+  const dir = Math.random()<0.5?-1:1;
+  const maxMag = lvl===2?1.0:0.6;
+  return { dir, mag: 0.3 + Math.random()*(maxMag-0.3) };
+}
+function windLabel(w){
+  if(!w || w.mag<=0) return '🌬️ CALMA';
+  const n = w.mag<0.5?1 : w.mag<0.8?2 : 3;
+  return '🌬️ ' + (w.dir<0?'◀':'▶').repeat(n);
+}
+
 function goShoot(){
   game.phase='shoot'; game.await=false; game.canShoot=true;
+  game.wind = makeWind();
   $('#shootTime').style.display = 'none';   // el reloj se paró al acertar: dispara sin prisa del cronómetro
   $('#shootProg').textContent='🥏 '+(game.idx+1)+'/'+game.total;
-  $('#shootTip').textContent = 'TOCA EL PLATO QUE REBOTA PARA ROMPERLO';
+  const wc=$('#shootWind'); wc.textContent=windLabel(game.wind);
+  wc.style.color = game.wind.mag>=0.8 ? '#ff6a6a' : game.wind.mag>0 ? '#ffd23c' : '#7bd63f';
+  $('#shootTip').textContent = game.wind.mag>0
+    ? '🌬️ ¡VIENTO! APUNTA HACIA EL LADO CONTRARIO'
+    : 'TOCA EL PLATO QUE REBOTA PARA ROMPERLO';
   refreshCoins();
   show('#scShoot');
   startRange();
@@ -401,7 +421,7 @@ function launchPlato(){
   plato.y=b.minY + Math.random()*(b.maxY-b.minY);
 }
 function updatePlato(dt){
-  if(!plato||!plato.alive) return;
+  if(!plato||!plato.alive||plato.doomed) return;
   const b=platoBox();
   plato.x+=plato.vx*dt; plato.y+=plato.vy*dt; plato.rot+=plato.vr*dt;
   if(plato.x<b.minX){ plato.x=b.minX; plato.vx=Math.abs(plato.vx); }
@@ -412,15 +432,18 @@ function updatePlato(dt){
 }
 
 function fire(){
-  if(!game.canShoot) return;
+  if(!game.canShoot || shot) return;                 // una saeta en vuelo cada vez
   sndShoot();
-  const cv=$('#range');
-  shot={ x0:RW/2, y0:RH-24, tx:aim.x, ty:aim.y, t0:performance.now(), dur:120 };
+  const devMax = RW*(game.level===2?0.20:0.14);      // desvío máximo con viento fuerte
+  const wx = game.wind ? game.wind.dir*game.wind.mag*devMax : 0;
+  const impactX = aim.x + wx, impactY = aim.y;        // donde acabará de verdad la saeta
+  let willHit=false;
   if(plato && plato.alive){
-    const d=Math.hypot(aim.x-plato.x, aim.y-plato.y);
-    if(d<=plato.r*1.35){ hitPlato(); }                       // ¡roto!
-    else { floats.push(mkFloat(aim.x,aim.y,'···','#9a86b8')); } // fallo: el plato sigue volando
+    const d=Math.hypot(impactX-plato.x, impactY-plato.y);
+    if(d<=plato.r*1.35){ willHit=true; plato.vx=0; plato.vy=0; plato.doomed=true; } // acierto: el plato se queda clavado
   }
+  shot={ x0:RW/2, y0:RH-24, ax:aim.x, ay:aim.y, wind:wx,
+         tx:impactX, ty:impactY, t0:performance.now(), dur:180, hit:willHit, done:false };
 }
 function hitPlato(){
   const p0=plato; plato.alive=false;
@@ -472,6 +495,18 @@ function drawRange(){
   ctx.fillRect(0,hor,W,H-hor);
   for(let i=0;i<15;i++){ if(i%2===0) ctx.fillRect(i*cw,hor-16,cw,16); }
 
+  // VIENTO visible: rayas que cruzan en su dirección (más largas/opacas cuanto más fuerte)
+  if(game.wind && game.wind.mag>0){
+    const w=game.wind, len=28+70*w.mag, ts=now*0.001;
+    ctx.save(); ctx.strokeStyle='rgba(232,238,255,'+(0.10+0.16*w.mag)+')'; ctx.lineWidth=2; ctx.lineCap='round';
+    for(let i=0;i<7;i++){
+      let frac = ts*(0.18+0.42*w.mag)*w.dir + i*0.19; frac -= Math.floor(frac);   // 0..1
+      const x = frac*(W+220)-110, yy = H*0.12 + (H*0.42)*(i/6);
+      ctx.beginPath(); ctx.moveTo(x,yy); ctx.lineTo(x+len*w.dir,yy); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   // PLATO en vuelo
   updatePlato(dt);
   drawPlato(ctx);
@@ -483,13 +518,20 @@ function drawRange(){
     ctx.save(); ctx.globalAlpha=1-k; ctx.translate(s.x,s.y); ctx.rotate(s.rot);
     ctx.fillStyle=s.col; ctx.fillRect(-s.s/2,-s.s/2,s.s,s.s); ctx.restore(); ctx.globalAlpha=1; }
 
-  // virote en vuelo (rápido, solo efecto visual)
+  // virote en vuelo: sale hacia la puntería y el viento lo va curvando
   if(shot){
     const p=clamp((now-shot.t0)/shot.dur,0,1);
-    const ax=shot.x0+(shot.tx-shot.x0)*p, ay=shot.y0+(shot.ty-shot.y0)*p;
-    const ang=Math.atan2(shot.ty-shot.y0, shot.tx-shot.x0);
+    const ax=shot.x0+(shot.ax-shot.x0)*p + shot.wind*p*p;   // desvío del viento (crece al final)
+    const ay=shot.y0+(shot.ay-shot.y0)*p;
+    const pPrev=Math.max(0,p-0.03);
+    const axP=shot.x0+(shot.ax-shot.x0)*pPrev + shot.wind*pPrev*pPrev;
+    const ang=Math.atan2(ay-(shot.y0+(shot.ay-shot.y0)*pPrev), ax-axP);
     drawArrow(ctx,ax,ay,ang,1);
-    if(p>=1) shot=null;
+    if(p>=1 && !shot.done){ shot.done=true;
+      if(shot.hit){ hitPlato(); }
+      else { sndThunk(); floats.push(mkFloat(shot.tx,shot.ty,'···','#c9b6e0')); }
+      shot=null;
+    }
   }
 
   // ballesta abajo + mira
