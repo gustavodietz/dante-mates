@@ -357,7 +357,7 @@ function goShoot(){
   $('#shootTime').style.display = showT?'block':'none';
   $('#shootProg').textContent='🥏 '+(game.idx+1)+'/'+game.total;
   $('#shootTip').textContent = game.level===2
-    ? '¡ROMPE EL PLATO! · EL RELOJ SIGUE' : 'APUNTA · TOCA PARA ROMPER EL PLATO';
+    ? '¡ROMPE EL PLATO QUE REBOTA! · EL RELOJ SIGUE' : 'TOCA EL PLATO QUE REBOTA PARA ROMPERLO';
   refreshCoins();
   show('#scShoot');
   startRange();
@@ -376,28 +376,37 @@ function sizeRange(){ const cv=$('#range'); const dpr=Math.min(2,window.devicePi
   cv.width=cv.clientWidth*dpr; cv.height=cv.clientHeight*dpr; rangeCtx.setTransform(dpr,0,0,dpr,0,0); }
 addEventListener('resize',()=>{ if(rangeRAF)sizeRange(); });
 
-/* ---- Lanzar un plato en parábola (se mantiene dentro de la pantalla) ---- */
+/* ---- Caja SIEMPRE visible donde rebota el plato (parte de arriba, lejos de la ballesta) ---- */
+function platoBox(){
+  const cv=$('#range');
+  const W=cv.clientWidth, H=Math.min(cv.clientHeight, window.innerHeight||cv.clientHeight);
+  const r=plato?plato.r:0;
+  return { W, H, minX:r+10, maxX:W-r-10, minY:H*0.14+r, maxY:H*0.70-r };
+}
+/* ---- Soltar un plato que rebota en los bordes durante unos segundos ---- */
 function launchPlato(){
-  const cv=$('#range'), W=cv.clientWidth, H=cv.clientHeight, base=Math.min(W,H);
+  const cv=$('#range'), base=Math.min(cv.clientWidth, Math.min(cv.clientHeight, window.innerHeight||cv.clientHeight));
   const tier=pickPlato(), r=base*tier.rf;
-  const fromLeft=Math.random()<0.5;
-  const tUp = game.level===2 ? 1.05 : 1.3;         // segundos hasta lo más alto
-  const g = 1.4*H/(tUp*tUp);                         // gravedad para que suba ~0.7·alto
-  const vy0 = -g*tUp;                                // velocidad vertical inicial (hacia arriba)
-  const fast = 1 + (0.130 - tier.rf)*1.8;            // los pequeños vuelan algo más rápido
-  const vx = (fromLeft?1:-1)*(W*0.95)/(2*tUp)*fast;  // cruza casi toda la pantalla
+  const speed = base*(game.level===2?0.60:0.42)*(1+(0.130-tier.rf)*2.4);  // px/s · los pequeños vuelan más rápido
+  // ángulo de salida evitando casi-horizontal o casi-vertical (para que rebote rico)
+  const a = (0.35 + Math.random()*0.9) * (Math.random()<0.5?1:-1) + (Math.random()<0.5?Math.PI:0);
   plato={ tier, r, col:tier.col, coins:tier.coins,
-    x: fromLeft? -r : W+r, y: H*0.90,
-    vx, vy:vy0, g, rot:0, vr:(fromLeft?1:-1)*6,
-    alive:true };
+    x:0, y:0, vx:Math.cos(a)*speed, vy:Math.sin(a)*speed,
+    rot:0, vr:(Math.random()<0.5?1:-1)*7, alive:true,
+    born:performance.now(), life:(game.level===2?4800:6500) };
+  const b=platoBox();
+  plato.x=(b.minX+b.maxX)/2 + (Math.random()<0.5?-1:1)*(b.maxX-b.minX)*0.22;
+  plato.y=(b.minY+b.maxY)/2;
 }
 function updatePlato(dt){
   if(!plato||!plato.alive) return;
-  plato.vy+=plato.g*dt; plato.x+=plato.vx*dt; plato.y+=plato.vy*dt; plato.rot+=plato.vr*dt;
-  const cv=$('#range'), W=cv.clientWidth, H=cv.clientHeight;
-  if(plato.x<-plato.r*2 || plato.x>W+plato.r*2 || plato.y>H+plato.r*2){
-    plato.alive=false; onPlatoGone(false);   // se escapó → fallo
-  }
+  const b=platoBox();
+  plato.x+=plato.vx*dt; plato.y+=plato.vy*dt; plato.rot+=plato.vr*dt;
+  if(plato.x<b.minX){ plato.x=b.minX; plato.vx=Math.abs(plato.vx); }
+  if(plato.x>b.maxX){ plato.x=b.maxX; plato.vx=-Math.abs(plato.vx); }
+  if(plato.y<b.minY){ plato.y=b.minY; plato.vy=Math.abs(plato.vy); }
+  if(plato.y>b.maxY){ plato.y=b.maxY; plato.vy=-Math.abs(plato.vy); }
+  if(performance.now()-plato.born > plato.life){ plato.alive=false; onPlatoGone(false); } // se agotó el tiempo → fallo
 }
 
 function fire(){
